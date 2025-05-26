@@ -4,8 +4,10 @@ import { Platform } from "react-native";
 // Use the IP address that works in Postman
 const BASE_URL = "http://192.168.20.24:8888/api";
 
-// Increase timeout for slower connections
-const TIMEOUT = 30000; // 30 seconds timeout
+// Reduce timeout and add retry configuration
+const TIMEOUT = 10000; // 10 seconds timeout
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second delay between retries
 
 // Common headers for all requests
 const getCommonHeaders = () => ({
@@ -13,8 +15,12 @@ const getCommonHeaders = () => ({
   "Content-Type": "application/json",
 });
 
-// Helper function to add timeout to fetch
-const fetchWithTimeout = async (url: string, options: RequestInit = {}) => {
+// Helper function to add timeout to fetch with retry logic
+const fetchWithTimeout = async (
+  url: string,
+  options: RequestInit = {},
+  retryCount = 0
+) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
@@ -26,6 +32,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}) => {
     console.log("[API Request Started]", {
       url,
       method: options.method || "GET",
+      retryCount,
       timestamp: new Date().toISOString(),
     });
 
@@ -64,6 +71,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}) => {
     const errorDetails = {
       url,
       method: options.method || "GET",
+      retryCount,
       timestamp: new Date().toISOString(),
       error:
         error instanceof Error
@@ -77,9 +85,18 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}) => {
 
     console.error("[API Request Failed]", errorDetails);
 
+    // Implement retry logic
+    if (retryCount < MAX_RETRIES) {
+      console.log(`Retrying request (${retryCount + 1}/${MAX_RETRIES})...`);
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+      return fetchWithTimeout(url, options, retryCount + 1);
+    }
+
     if (error instanceof Error) {
       if (error.name === "AbortError") {
-        throw new Error(`Request timeout after ${TIMEOUT}ms`);
+        throw new Error(
+          `Request timeout after ${TIMEOUT}ms (${MAX_RETRIES} retries attempted)`
+        );
       }
       throw error;
     }
@@ -185,7 +202,7 @@ const api = {
         time: `${pingTime}ms`,
       });
 
-      // Then try the actual rooms endpoint
+      // Then try the actual rooms endpoint with retry logic
       const response = await fetchWithTimeout(`${BASE_URL}/rooms`, {
         method: "GET",
       });

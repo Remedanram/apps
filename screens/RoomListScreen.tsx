@@ -15,6 +15,8 @@ import theme from "../constants/theme";
 import roomService, { Room } from "../services/roomService";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
+import api from "../services/api";
+import type { Room as RoomType } from "../types/room";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "RoomList">;
@@ -22,10 +24,11 @@ type Props = {
 
 const RoomListScreen: React.FC<Props> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<RoomType[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const loadRooms = async () => {
     try {
@@ -33,21 +36,80 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
       const response = await roomService.getAllRooms();
       console.log("API Response:", response);
       setRooms(Array.isArray(response) ? response : []);
+      setRetryCount(0); // Reset retry count on success
     } catch (error: any) {
       console.error("Error details:", {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
       });
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to load rooms";
+
+      let errorMessage = "Failed to load rooms";
+
+      if (error.message.includes("timeout")) {
+        errorMessage =
+          "Server is taking too long to respond. Please check your connection and try again.";
+      } else if (error.message.includes("Network request failed")) {
+        errorMessage =
+          "Network connection error. Please check your internet connection.";
+      } else {
+        errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to load rooms";
+      }
+
       setError(errorMessage);
-      Alert.alert("Error", errorMessage);
+      Alert.alert("Connection Error", errorMessage, [
+        {
+          text: "Retry",
+          onPress: () => {
+            setRetryCount((prev) => prev + 1);
+            loadRooms();
+          },
+        },
+        {
+          text: "Test Connection",
+          onPress: testConnection,
+        },
+      ]);
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const testConnection = async () => {
+    try {
+      setLoading(true);
+      const isConnected = await api.testConnection();
+      if (isConnected) {
+        Alert.alert("Success", "Connected to server successfully!", [
+          {
+            text: "OK",
+            onPress: loadRooms,
+          },
+        ]);
+      } else {
+        Alert.alert(
+          "Connection Error",
+          "Could not connect to server. Please check if the server is running.",
+          [
+            {
+              text: "Retry",
+              onPress: testConnection,
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error("Connection test error:", error);
+      Alert.alert(
+        "Error",
+        "Failed to test connection. Please check your network settings."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,7 +128,7 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
       room.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderRoomItem = ({ item }: { item: Room }) => (
+  const renderRoomItem = ({ item }: { item: RoomType }) => (
     <Card style={styles.roomCard}>
       <View style={styles.roomHeader}>
         <Text style={styles.roomNumber}>{item.roomName}</Text>
@@ -119,9 +181,17 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.errorTitle}>Connection Error</Text>
         <Text style={styles.errorText}>{error}</Text>
         <Text style={styles.apiUrl}>API URL: {roomService.getBaseUrl()}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={loadRooms}>
-          <Text style={styles.retryButtonText}>Retry Connection</Text>
-        </TouchableOpacity>
+        <View style={styles.errorButtons}>
+          <TouchableOpacity style={styles.retryButton} onPress={loadRooms}>
+            <Text style={styles.retryButtonText}>Retry Connection</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.retryButton, styles.testButton]}
+            onPress={testConnection}
+          >
+            <Text style={styles.retryButtonText}>Test Connection</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -268,6 +338,14 @@ const styles = StyleSheet.create({
   value: {
     fontSize: theme.typography.sizes.md,
     fontWeight: "500",
+  },
+  errorButtons: {
+    flexDirection: "row",
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.lg,
+  },
+  testButton: {
+    backgroundColor: theme.colors.secondary,
   },
 });
 
