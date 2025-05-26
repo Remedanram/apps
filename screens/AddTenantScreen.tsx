@@ -1,0 +1,188 @@
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+} from "react-native";
+import { Text } from "react-native";
+import { Card } from "../components";
+import theme from "../constants/theme";
+import { Picker } from "@react-native-picker/picker";
+import tenantService from "../services/tenantService";
+import roomService from "../services/roomService";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../navigation/AppNavigator";
+import { Room } from "../types/room";
+
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "AddTenant">;
+};
+
+const AddTenantScreen = ({ navigation }: Props) => {
+  const [tenantData, setTenantData] = useState({
+    name: "",
+    phone: "",
+    roomName: "",
+  });
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const fetchRooms = async () => {
+    try {
+      const roomsList = await roomService.getAllRooms();
+      setRooms(roomsList);
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+      Alert.alert("Error", "Failed to load rooms. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!tenantData.name || !tenantData.phone || !tenantData.roomName) {
+      Alert.alert("Error", "Please fill in all required fields");
+      return;
+    }
+
+    try {
+      await tenantService.createTenant(tenantData);
+      Alert.alert("Success", "Tenant added successfully", [
+        {
+          text: "OK",
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    } catch (error) {
+      Alert.alert("Error", "Failed to add tenant. Please try again.");
+    }
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      <Card style={styles.formCard}>
+        <Text style={styles.title}>Add New Tenant</Text>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Full Name *</Text>
+          <TextInput
+            style={styles.input}
+            value={tenantData.name}
+            onChangeText={(text) =>
+              setTenantData({ ...tenantData, name: text })
+            }
+            placeholder="Enter tenant's full name"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Phone Number *</Text>
+          <TextInput
+            style={styles.input}
+            value={tenantData.phone}
+            onChangeText={(text) =>
+              setTenantData({ ...tenantData, phone: text })
+            }
+            placeholder="Enter phone number"
+            keyboardType="phone-pad"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Select Room *</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={tenantData.roomName}
+              onValueChange={(itemValue) =>
+                setTenantData({ ...tenantData, roomName: itemValue })
+              }
+              enabled={!loading}
+            >
+              <Picker.Item label="Select a room" value="" />
+              {rooms.map((room) => (
+                <Picker.Item
+                  key={room.roomName}
+                  label={`${room.roomName} - $${room.rentAmount}`}
+                  value={room.roomName}
+                />
+              ))}
+            </Picker>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.submitButton, loading && styles.disabledButton]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          <Text style={styles.submitButtonText}>
+            {loading ? "Loading Rooms..." : "Add Tenant"}
+          </Text>
+        </TouchableOpacity>
+      </Card>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.md,
+  },
+  formCard: {
+    padding: theme.spacing.lg,
+  },
+  title: {
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: "bold",
+    marginBottom: theme.spacing.lg,
+  },
+  inputContainer: {
+    marginBottom: theme.spacing.md,
+  },
+  label: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.xs,
+  },
+  input: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.sm,
+    padding: theme.spacing.sm,
+    fontSize: theme.typography.sizes.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  pickerContainer: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  submitButton: {
+    backgroundColor: theme.colors.primary,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    alignItems: "center",
+    marginTop: theme.spacing.md,
+  },
+  disabledButton: {
+    backgroundColor: theme.colors.text.secondary,
+    opacity: 0.7,
+  },
+  submitButtonText: {
+    color: theme.colors.card,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: "500",
+  },
+});
+
+export default AddTenantScreen;

@@ -1,0 +1,446 @@
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import Card from "../components/Card";
+import theme from "../constants/theme";
+import { Transaction as GlobalTransaction } from "../types/navigation";
+import { mockTransactions } from "../services/mockData";
+import api from "../services/api";
+
+interface Transaction {
+  id: number;
+  bankTxnId: string;
+  txnDate: string;
+  amount: number;
+  senderName: string;
+  senderPhone: string;
+  description: string;
+  importedAt: string;
+}
+
+interface TransactionsListScreenProps {
+  status?: string;
+  showRecent?: boolean;
+}
+
+type RootStackParamList = {
+  TransactionsList: { showRecent?: boolean; status?: string };
+};
+
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "TransactionsList"
+>;
+
+const TransactionsListScreen = () => {
+  const navigation = useNavigation<NavigationProp>();
+  const route =
+    useRoute<RouteProp<Record<string, TransactionsListScreenProps>, string>>();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(
+    []
+  );
+  const [loading, setLoading] = useState(false);
+  const [loadingRecent, setLoadingRecent] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [filters, setFilters] = useState({
+    status: route.params?.status || "",
+    room: "",
+    phone: "",
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRecentTransactions = async () => {
+    setLoadingRecent(true);
+    setError(null);
+    try {
+      console.log("Attempting to fetch recent transactions...");
+      const { data } = await api.get("/transactions/recentTransactions");
+      console.log("Recent transactions fetched successfully:", data);
+      setRecentTransactions(data);
+    } catch (error) {
+      console.error("Error fetching recent transactions:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to load recent transactions";
+      setError(errorMessage);
+      Alert.alert(
+        "Connection Error",
+        "Unable to connect to the server. Please check your network connection and try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setLoadingRecent(false);
+    }
+  };
+
+  const fetchTransactions = async (
+    pageNumber: number,
+    newFilters = filters
+  ) => {
+    if (loading || (pageNumber > 1 && !hasMore)) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      console.log("Attempting to fetch all transactions...");
+      const { data } = await api.get("/transactions/allTransactions");
+      console.log("All transactions fetched successfully:", data);
+      setTransactions(pageNumber === 1 ? data : [...transactions, ...data]);
+      setHasMore(data.length === 10);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to load transactions";
+      setError(errorMessage);
+      Alert.alert(
+        "Connection Error",
+        "Unable to connect to the server. Please check your network connection and try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testApiConnection = async () => {
+    try {
+      console.log("Testing API connection to:", api.getBaseUrl());
+      const isConnected = await api.testConnection();
+      console.log("API Connection test result:", isConnected);
+      if (!isConnected) {
+        setError("Unable to connect to the server");
+        Alert.alert(
+          "Connection Error",
+          "Unable to connect to the server. Please check your network connection and try again.",
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error) {
+      console.error("API Connection test failed:", error);
+      setError("Connection test failed");
+    }
+  };
+
+  useEffect(() => {
+    testApiConnection();
+    if (route.params?.showRecent) {
+      fetchRecentTransactions();
+    } else {
+      fetchTransactions(1);
+    }
+  }, [route.params?.showRecent]);
+
+  const handleLoadMore = () => {
+    if (!loading && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchTransactions(nextPage);
+    }
+  };
+
+  const handleFilter = () => {
+    setPage(1);
+    fetchTransactions(1, filters);
+  };
+
+  const handleViewAll = () => {
+    navigation.navigate("TransactionsList", { showRecent: false });
+  };
+
+  const renderTransactionItem = ({ item }: { item: Transaction }) => (
+    <Card variant="outlined" style={styles.transactionCard}>
+      <View style={styles.transactionHeader}>
+        <Text style={styles.date}>
+          {new Date(item.txnDate).toLocaleDateString()}
+        </Text>
+      </View>
+      <View style={styles.transactionDetails}>
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>Transaction ID:</Text>
+          <Text style={styles.value}>{item.bankTxnId}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>Sender:</Text>
+          <Text style={styles.value}>{item.senderName}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>Phone:</Text>
+          <Text style={styles.value}>{item.senderPhone}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>Amount:</Text>
+          <Text style={styles.value}>${item.amount.toFixed(2)}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>Description:</Text>
+          <Text style={styles.value}>{item.description}</Text>
+        </View>
+      </View>
+    </Card>
+  );
+
+  const renderRecentTransactions = () => {
+    if (loadingRecent) {
+      return (
+        <View style={styles.loader}>
+          <ActivityIndicator color={theme.colors.primary} />
+        </View>
+      );
+    }
+
+    return (
+      <View>
+        <View style={styles.recentHeader}>
+          <Text style={styles.recentTitle}>Recent Transactions</Text>
+          <TouchableOpacity
+            onPress={handleViewAll}
+            style={styles.viewAllButton}
+          >
+            <Text style={styles.viewAllText}>View All</Text>
+            <Feather
+              name="chevron-right"
+              size={16}
+              color={theme.colors.primary}
+            />
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          data={recentTransactions}
+          renderItem={renderTransactionItem}
+          keyExtractor={(item) => item.id.toString()}
+          scrollEnabled={false}
+        />
+      </View>
+    );
+  };
+
+  const renderError = () => {
+    if (!error) return null;
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => {
+            if (route.params?.showRecent) {
+              fetchRecentTransactions();
+            } else {
+              fetchTransactions(1);
+            }
+          }}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      {renderError()}
+      {route.params?.showRecent ? (
+        renderRecentTransactions()
+      ) : (
+        <>
+          <Card variant="outlined" style={styles.filtersCard}>
+            <View style={styles.filterRow}>
+              <View style={styles.filterInput}>
+                <Feather
+                  name="hash"
+                  size={16}
+                  color={theme.colors.text.secondary}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Room"
+                  value={filters.room}
+                  onChangeText={(text) =>
+                    setFilters({ ...filters, room: text })
+                  }
+                />
+              </View>
+              <View style={styles.filterInput}>
+                <Feather
+                  name="phone"
+                  size={16}
+                  color={theme.colors.text.secondary}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Phone"
+                  value={filters.phone}
+                  onChangeText={(text) =>
+                    setFilters({ ...filters, phone: text })
+                  }
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.filterButton}
+                onPress={handleFilter}
+              >
+                <Feather name="search" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+          </Card>
+
+          <FlatList
+            data={transactions}
+            renderItem={renderTransactionItem}
+            keyExtractor={(item) => item.id.toString()}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListEmptyComponent={() =>
+              !loading && !error ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No transactions found</Text>
+                </View>
+              ) : null
+            }
+            ListFooterComponent={() =>
+              loading ? (
+                <View style={styles.loader}>
+                  <ActivityIndicator color={theme.colors.primary} />
+                </View>
+              ) : null
+            }
+          />
+        </>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  filtersCard: {
+    margin: theme.spacing.md,
+  },
+  filterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  filterInput: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: theme.spacing.sm,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.sm,
+    paddingHorizontal: theme.spacing.sm,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: theme.spacing.sm,
+    marginLeft: theme.spacing.xs,
+    fontSize: theme.typography.sizes.md,
+  },
+  filterButton: {
+    backgroundColor: theme.colors.primary,
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+  },
+  transactionCard: {
+    margin: theme.spacing.md,
+    marginTop: 0,
+  },
+  transactionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: theme.spacing.sm,
+  },
+  date: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+  },
+  transactionDetails: {
+    gap: theme.spacing.xs,
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  label: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+  },
+  value: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.primary,
+    fontWeight: "500",
+  },
+  loader: {
+    padding: theme.spacing.md,
+    alignItems: "center",
+  },
+  recentHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: theme.spacing.md,
+  },
+  recentTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: "600",
+    color: theme.colors.text.primary,
+  },
+  viewAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  viewAllText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.primary,
+    marginRight: theme.spacing.xs,
+  },
+  errorContainer: {
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.error + "10",
+    margin: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
+    alignItems: "center",
+  },
+  errorText: {
+    color: theme.colors.error,
+    marginBottom: theme.spacing.sm,
+    textAlign: "center",
+  },
+  retryButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+  },
+  retryButtonText: {
+    color: "white",
+    fontWeight: "500",
+  },
+  emptyContainer: {
+    padding: theme.spacing.xl,
+    alignItems: "center",
+  },
+  emptyText: {
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.md,
+  },
+});
+
+export default TransactionsListScreen;
