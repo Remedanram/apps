@@ -17,18 +17,18 @@ import matchService, { MatchRoom } from "../services/matchService";
 type Props = NativeStackScreenProps<MonthlyStackParamList, "PendingRooms">;
 
 const PendingRoomsScreen: React.FC<Props> = ({ route }) => {
-  const { month, year } = route.params;
+  const { period } = route.params;
   const [loading, setLoading] = useState(true);
   const [unpaidRooms, setUnpaidRooms] = useState<MatchRoom[]>([]);
 
   useEffect(() => {
     loadData();
-  }, [month, year]);
+  }, [period]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const rooms = await matchService.getUnpaidRooms(month, year);
+      const rooms = await matchService.getUnpaidRooms(period);
       setUnpaidRooms(Array.isArray(rooms) ? rooms : []);
     } catch (error) {
       console.error("Error loading pending rooms:", error);
@@ -78,9 +78,7 @@ const PendingRoomsScreen: React.FC<Props> = ({ route }) => {
         keyExtractor={(item) => item.roomName}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={
-          <Text style={styles.noDataText}>
-            No pending rooms for {month} {year}
-          </Text>
+          <Text style={styles.noDataText}>No pending rooms for {period}</Text>
         }
       />
     </View>

@@ -17,18 +17,18 @@ import matchService, { MatchRoom } from "../services/matchService";
 type Props = NativeStackScreenProps<MonthlyStackParamList, "PaidRooms">;
 
 const PaidRoomsScreen: React.FC<Props> = ({ route }) => {
-  const { month, year } = route.params;
+  const { period } = route.params;
   const [loading, setLoading] = useState(true);
   const [paidRooms, setPaidRooms] = useState<MatchRoom[]>([]);
 
   useEffect(() => {
     loadData();
-  }, [month, year]);
+  }, [period]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const rooms = await matchService.getPaidRooms(month, year);
+      const rooms = await matchService.getPaidRooms(period);
       setPaidRooms(Array.isArray(rooms) ? rooms : []);
     } catch (error) {
       console.error("Error loading paid rooms:", error);
@@ -78,9 +78,7 @@ const PaidRoomsScreen: React.FC<Props> = ({ route }) => {
         keyExtractor={(item) => item.roomName}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={
-          <Text style={styles.noDataText}>
-            No paid rooms for {month} {year}
-          </Text>
+          <Text style={styles.noDataText}>No paid rooms for {period}</Text>
         }
       />
     </View>

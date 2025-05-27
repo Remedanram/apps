@@ -9,12 +9,10 @@ export interface MatchRoom {
 }
 
 const matchService = {
-  // Get paid rooms for a specific month and year
-  getPaidRooms: async (month: string, year: number): Promise<MatchRoom[]> => {
+  // Get paid rooms for a specific period (YYYY-MM)
+  getPaidRooms: async (period: string): Promise<MatchRoom[]> => {
     try {
-      const response = await api.get(
-        `/matches/paid-rooms?month=${month}&year=${year}`
-      );
+      const response = await api.get(`/matches/paid-rooms?period=${period}`);
       if (response?.data) {
         return response.data;
       }
@@ -25,12 +23,10 @@ const matchService = {
     }
   },
 
-  // Get unpaid rooms for a specific month and year
-  getUnpaidRooms: async (month: string, year: number): Promise<MatchRoom[]> => {
+  // Get unpaid rooms for a specific period (YYYY-MM)
+  getUnpaidRooms: async (period: string): Promise<MatchRoom[]> => {
     try {
-      const response = await api.get(
-        `/matches/unpaid-rooms?month=${month}&year=${year}`
-      );
+      const response = await api.get(`/matches/unpaid-rooms?period=${period}`);
       if (response?.data) {
         return response.data;
       }
@@ -41,12 +37,10 @@ const matchService = {
     }
   },
 
-  // Get paid rooms count for a specific month and year
-  getPaidCount: async (month: string, year: number): Promise<number> => {
+  // Get paid rooms count for a specific period (YYYY-MM)
+  getPaidCount: async (period: string): Promise<number> => {
     try {
-      const response = await api.get(
-        `/matches/paid-count?month=${month}&year=${year}`
-      );
+      const response = await api.get(`/matches/paid-count?period=${period}`);
       if (response?.data !== undefined) {
         return response.data;
       }
@@ -57,12 +51,10 @@ const matchService = {
     }
   },
 
-  // Get unpaid rooms count for a specific month and year
-  getUnpaidCount: async (month: string, year: number): Promise<number> => {
+  // Get unpaid rooms count for a specific period (YYYY-MM)
+  getUnpaidCount: async (period: string): Promise<number> => {
     try {
-      const response = await api.get(
-        `/matches/unpaid-count?month=${month}&year=${year}`
-      );
+      const response = await api.get(`/matches/unpaid-count?period=${period}`);
       if (response?.data !== undefined) {
         return response.data;
       }

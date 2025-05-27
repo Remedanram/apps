@@ -36,14 +36,13 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
 
   const loadData = async () => {
     try {
-      const monthName = format(selectedDate, "MMMM");
-      const year = getYear(selectedDate);
+      const period = format(selectedDate, "yyyy-MM");
 
       const [paid, unpaid, paidCountData, unpaidCountData] = await Promise.all([
-        matchService.getPaidRooms(monthName, year),
-        matchService.getUnpaidRooms(monthName, year),
-        matchService.getPaidCount(monthName, year),
-        matchService.getUnpaidCount(monthName, year),
+        matchService.getPaidRooms(period),
+        matchService.getUnpaidRooms(period),
+        matchService.getPaidCount(period),
+        matchService.getUnpaidCount(period),
       ]);
 
       setPaidRooms(Array.isArray(paid) ? paid : []);
@@ -75,8 +74,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
     setSelectedDate(newDate);
     setShowMonthPicker(false);
     navigation.navigate("MonthlyDetails", {
-      month: format(newDate, "MMMM"),
-      year: getYear(newDate),
+      period: format(newDate, "yyyy-MM"),
     });
   };
 
@@ -155,8 +153,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.statItem}
             onPress={() =>
               navigation.navigate("PaidRooms", {
-                month: format(selectedDate, "MMMM"),
-                year: getYear(selectedDate),
+                period: format(selectedDate, "yyyy-MM"),
               })
             }
           >
@@ -175,8 +172,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.statItem}
             onPress={() =>
               navigation.navigate("PendingRooms", {
-                month: format(selectedDate, "MMMM"),
-                year: getYear(selectedDate),
+                period: format(selectedDate, "yyyy-MM"),
               })
             }
           >

@@ -35,9 +35,9 @@ export type RootStackParamList = {
 
 export type MonthlyStackParamList = {
   MonthlyHome: undefined;
-  PaidRooms: { month: string; year: number };
-  PendingRooms: { month: string; year: number };
-  MonthlyDetails: { month: string; year: number };
+  PaidRooms: { period: string };
+  PendingRooms: { period: string };
+  MonthlyDetails: { period: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
