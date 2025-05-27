@@ -17,49 +17,12 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import roomService from "../services/roomService";
 import type { RoomStats } from "../types/room";
 import tenantService from "../services/tenantService";
+import transactionService from "../services/transactionService";
+import type { Transaction } from "../services/transactionService";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "Dashboard">;
 };
-
-const mockTransactions = [
-  {
-    id: 1,
-    roomNumber: "101",
-    tenant: "John Doe",
-    amount: 500,
-    type: "PAYMENT" as const,
-    date: new Date().toISOString(),
-    status: "completed" as const,
-  },
-  {
-    id: 2,
-    roomNumber: "102",
-    tenant: "Jane Smith",
-    amount: 450,
-    type: "PAYMENT" as const,
-    date: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-    status: "completed" as const,
-  },
-  {
-    id: 3,
-    roomNumber: "103",
-    tenant: "Mike Johnson",
-    amount: 550,
-    type: "PAYMENT" as const,
-    date: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-    status: "completed" as const,
-  },
-  {
-    id: 4,
-    roomNumber: "104",
-    tenant: "Sarah Williams",
-    amount: 480,
-    type: "PAYMENT" as const,
-    date: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-    status: "completed" as const,
-  },
-];
 
 const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
@@ -78,10 +41,8 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       vacant: 0,
       maintenance: 0,
     },
-    recentTransactions: mockTransactions,
+    recentTransactions: [],
   });
-  const [totalRooms, setTotalRooms] = useState(0);
-  const [totalTenants, setTotalTenants] = useState(0);
 
   const loadDashboardData = async () => {
     try {
@@ -91,8 +52,10 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       const tenantStats = await tenantService.getTotalTenants();
       const vacantRooms = await roomService.getVacantRooms();
       const occupiedRooms = await roomService.getOccupiedRooms();
+      const recentTransactions =
+        await transactionService.getRecentTransactions();
 
-      // Update dashboard data with real room stats
+      // Update dashboard data with real data
       setDashboardData((prev) => ({
         ...prev,
         quickStats: {
@@ -107,9 +70,8 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           maintenance: 0,
         },
         occupancyRate: (occupiedRooms / roomStats.totalRooms) * 100 || 0,
+        recentTransactions,
       }));
-      setTotalRooms(roomStats.totalRooms);
-      setTotalTenants(tenantStats.totalTenants);
     } catch (error) {
       console.error("Error loading dashboard data:", error);
       Alert.alert("Error", "Failed to load dashboard data");
@@ -147,8 +109,6 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         break;
     }
   };
-
-  const occupancyRate = totalRooms > 0 ? (totalTenants / totalRooms) * 100 : 0;
 
   return (
     <ScrollView
@@ -227,7 +187,9 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       {/* Occupancy Card */}
       <Card style={styles.occupancyCard}>
         <Text style={styles.cardTitle}>Occupancy Rate</Text>
-        <Text style={styles.occupancyRate}>{occupancyRate.toFixed(1)}%</Text>
+        <Text style={styles.occupancyRate}>
+          {dashboardData.occupancyRate.toFixed(1)}%
+        </Text>
         <View style={styles.roomStatusContainer}>
           <View style={styles.roomStatusItem}>
             <Text style={styles.roomStatusValue}>
@@ -266,31 +228,30 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             />
           </TouchableOpacity>
         </View>
-        {dashboardData.recentTransactions.map((transaction) => (
+        {dashboardData.recentTransactions?.map((transaction) => (
           <View key={transaction.id} style={styles.transactionItem}>
             <View>
-              <Text style={styles.transactionRoom}>
-                Room {transaction.roomNumber}
+              <Text style={styles.transactionName}>
+                {transaction.senderName}
               </Text>
-              <Text style={styles.transactionTenant}>{transaction.tenant}</Text>
+              <Text style={styles.transactionPhone}>
+                {transaction.senderPhone}
+              </Text>
+              <Text style={styles.transactionDescription}>
+                {transaction.description}
+              </Text>
             </View>
             <View>
               <Text
                 style={[
                   styles.transactionAmount,
-                  {
-                    color:
-                      transaction.type === "PAYMENT"
-                        ? theme.colors.success
-                        : theme.colors.error,
-                  },
+                  { color: theme.colors.success },
                 ]}
               >
-                {transaction.type === "PAYMENT" ? "+" : "-"}$
-                {transaction.amount}
+                +${transaction.amount.toFixed(2)}
               </Text>
               <Text style={styles.transactionDate}>
-                {new Date(transaction.date).toLocaleDateString()}
+                {new Date(transaction.txnDate).toLocaleDateString()}
               </Text>
             </View>
           </View>
@@ -364,10 +325,10 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     padding: theme.spacing.md,
     paddingTop: 0,
-    gap: theme.spacing.md,
   },
   statsButton: {
     width: "48%",
@@ -445,11 +406,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
-  transactionRoom: {
+  transactionName: {
     fontSize: theme.typography.sizes.md,
     fontWeight: "600",
+    color: theme.colors.text.primary,
   },
-  transactionTenant: {
+  transactionPhone: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
+  },
+  transactionDescription: {
     fontSize: theme.typography.sizes.sm,
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.xs,

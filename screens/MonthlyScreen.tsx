@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
@@ -10,39 +10,58 @@ import {
   FlatList,
 } from "react-native";
 import Card from "../components/Card";
-import {
-  mockMonthlySummary,
-  mockMonthlyTransactions,
-} from "../services/mockData";
 import theme from "../constants/theme";
 import { Feather } from "@expo/vector-icons";
 import { format } from "date-fns";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MonthlyStackParamList } from "../navigation/AppNavigator";
-import { Transaction } from "../types/navigation";
+import matchService, { MatchRoom } from "../services/matchService";
 
 type Props = {
   navigation: NativeStackNavigationProp<MonthlyStackParamList, "MonthlyHome">;
 };
 
-type MonthlyTransactions = {
-  [key: string]: Transaction[];
-};
-
 const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
-  const [data, setData] = useState(mockMonthlySummary);
   const [refreshing, setRefreshing] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState("2024-03");
+  const [selectedMonth, setSelectedMonth] = useState("June");
+  const [paidCount, setPaidCount] = useState(0);
+  const [unpaidCount, setUnpaidCount] = useState(0);
+  const [paidRooms, setPaidRooms] = useState<MatchRoom[]>([]);
+  const [unpaidRooms, setUnpaidRooms] = useState<MatchRoom[]>([]);
 
-  const months = Object.keys(mockMonthlyTransactions).sort((a, b) =>
-    b.localeCompare(a)
-  );
+  const loadData = async () => {
+    try {
+      const formattedMonth =
+        selectedMonth.charAt(0).toUpperCase() +
+        selectedMonth.slice(1).toLowerCase();
+      const [paid, unpaid, paidCountData, unpaidCountData] = await Promise.all([
+        matchService.getPaidRooms(formattedMonth),
+        matchService.getUnpaidRooms(formattedMonth),
+        matchService.getPaidCount(formattedMonth),
+        matchService.getUnpaidCount(formattedMonth),
+      ]);
+
+      setPaidRooms(Array.isArray(paid) ? paid : []);
+      setUnpaidRooms(Array.isArray(unpaid) ? unpaid : []);
+      setPaidCount(typeof paidCountData === "number" ? paidCountData : 0);
+      setUnpaidCount(typeof unpaidCountData === "number" ? unpaidCountData : 0);
+    } catch (error) {
+      console.error("Error loading monthly data:", error);
+      setPaidRooms([]);
+      setUnpaidRooms([]);
+      setPaidCount(0);
+      setUnpaidCount(0);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [selectedMonth]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setData(mockMonthlySummary);
+    await loadData();
     setRefreshing(false);
   };
 
@@ -52,12 +71,29 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("MonthlyDetails", { month });
   };
 
-  const formatOccupancyRate = (rate: number) => {
-    return rate.toFixed(1);
+  const calculateTotalRevenue = () => {
+    return paidRooms.reduce((sum, room) => sum + room.amount, 0);
   };
 
-  const transactions =
-    (mockMonthlyTransactions as MonthlyTransactions)[selectedMonth] || [];
+  const calculateOccupancyRate = () => {
+    const totalRooms = paidCount + unpaidCount;
+    return totalRooms > 0 ? (paidCount / totalRooms) * 100 : 0;
+  };
+
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
 
   return (
     <ScrollView
@@ -71,9 +107,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
         style={styles.monthSelector}
         onPress={() => setShowMonthPicker(true)}
       >
-        <Text style={styles.monthText}>
-          {format(new Date(selectedMonth), "MMMM yyyy")}
-        </Text>
+        <Text style={styles.monthText}>{selectedMonth}</Text>
         <Feather name="calendar" size={24} color={theme.colors.primary} />
       </TouchableOpacity>
 
@@ -87,9 +121,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
               size={24}
               color={theme.colors.success}
             />
-            <Text style={styles.statValue}>
-              ${data.currentMonth.totalRevenue}
-            </Text>
+            <Text style={styles.statValue}>${calculateTotalRevenue()}</Text>
             <Text style={styles.statLabel}>Total Revenue</Text>
           </View>
 
@@ -103,7 +135,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
               color={theme.colors.success}
             />
             <Text style={[styles.statValue, { color: theme.colors.success }]}>
-              {data.currentMonth.paidRooms}
+              {paidCount}
             </Text>
             <Text style={styles.statLabel}>Paid Rooms</Text>
           </TouchableOpacity>
@@ -114,7 +146,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
           >
             <Feather name="clock" size={24} color={theme.colors.warning} />
             <Text style={[styles.statValue, { color: theme.colors.warning }]}>
-              {data.currentMonth.pendingRooms}
+              {unpaidCount}
             </Text>
             <Text style={styles.statLabel}>Pending</Text>
           </TouchableOpacity>
@@ -122,7 +154,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.statItem}>
             <Feather name="percent" size={24} color={theme.colors.info} />
             <Text style={styles.statValue}>
-              {formatOccupancyRate(data.currentMonth.occupancyRate)}%
+              {calculateOccupancyRate().toFixed(1)}%
             </Text>
             <Text style={styles.statLabel}>Occupancy</Text>
           </View>
@@ -132,31 +164,26 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
       {/* Monthly Transactions */}
       <Card style={styles.transactionsCard}>
         <Text style={styles.cardTitle}>Monthly Transactions</Text>
-        {transactions.map((transaction) => (
-          <View key={transaction.id} style={styles.transactionItem}>
+        {paidRooms.map((room) => (
+          <View key={room.roomName} style={styles.transactionItem}>
             <View>
-              <Text style={styles.transactionRoom}>
-                Room {transaction.roomNumber}
+              <Text style={styles.transactionRoom}>{room.roomName}</Text>
+              <Text style={styles.transactionTenant}>{room.tenantName}</Text>
+              <Text style={styles.statusText}>
+                Status: {room.status.replace(/_/g, " ")}
               </Text>
-              <Text style={styles.transactionTenant}>{transaction.tenant}</Text>
             </View>
             <View>
               <Text
                 style={[
                   styles.transactionAmount,
-                  {
-                    color:
-                      transaction.type === "PAYMENT"
-                        ? theme.colors.success
-                        : theme.colors.error,
-                  },
+                  { color: theme.colors.success },
                 ]}
               >
-                {transaction.type === "PAYMENT" ? "+" : "-"}$
-                {transaction.amount}
+                +${room.amount}
               </Text>
               <Text style={styles.transactionDate}>
-                {new Date(transaction.date).toLocaleDateString()}
+                {new Date(room.day).toLocaleDateString()}
               </Text>
             </View>
           </View>
@@ -194,7 +221,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
                       selectedMonth === item && styles.selectedMonthItemText,
                     ]}
                   >
-                    {format(new Date(item), "MMMM yyyy")}
+                    {item}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -276,6 +303,12 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.sm,
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.xs,
+  },
+  statusText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
+    fontStyle: "italic",
   },
   transactionAmount: {
     fontSize: theme.typography.sizes.md,

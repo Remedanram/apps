@@ -23,12 +23,13 @@ export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export interface Transaction {
   id: number;
-  roomNumber: string;
-  tenant: string;
+  bankTxnId: string;
+  txnDate: string;
   amount: number;
-  type: "PAYMENT" | "CHARGE";
-  date: string;
-  status: "completed" | "pending";
+  senderName: string;
+  senderPhone: string;
+  description: string;
+  importedAt: string;
 }
 
 export interface DashboardData {
@@ -45,5 +46,5 @@ export interface DashboardData {
     vacant: number;
     maintenance: number;
   };
-  recentTransactions: Transaction[];
+  recentTransactions?: Transaction[];
 }
