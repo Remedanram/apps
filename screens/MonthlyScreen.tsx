@@ -12,7 +12,7 @@ import {
 import Card from "../components/Card";
 import theme from "../constants/theme";
 import { Feather } from "@expo/vector-icons";
-import { format } from "date-fns";
+import { format, getYear, setYear } from "date-fns";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MonthlyStackParamList } from "../navigation/AppNavigator";
 import matchService, { MatchRoom } from "../services/matchService";
@@ -24,22 +24,26 @@ type Props = {
 const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState("June");
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [paidCount, setPaidCount] = useState(0);
   const [unpaidCount, setUnpaidCount] = useState(0);
   const [paidRooms, setPaidRooms] = useState<MatchRoom[]>([]);
   const [unpaidRooms, setUnpaidRooms] = useState<MatchRoom[]>([]);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+
+  const currentYear = getYear(new Date());
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
   const loadData = async () => {
     try {
-      const formattedMonth =
-        selectedMonth.charAt(0).toUpperCase() +
-        selectedMonth.slice(1).toLowerCase();
+      const monthName = format(selectedDate, "MMMM");
+      const year = getYear(selectedDate);
+
       const [paid, unpaid, paidCountData, unpaidCountData] = await Promise.all([
-        matchService.getPaidRooms(formattedMonth),
-        matchService.getUnpaidRooms(formattedMonth),
-        matchService.getPaidCount(formattedMonth),
-        matchService.getUnpaidCount(formattedMonth),
+        matchService.getPaidRooms(monthName, year),
+        matchService.getUnpaidRooms(monthName, year),
+        matchService.getPaidCount(monthName, year),
+        matchService.getUnpaidCount(monthName, year),
       ]);
 
       setPaidRooms(Array.isArray(paid) ? paid : []);
@@ -57,7 +61,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
 
   useEffect(() => {
     loadData();
-  }, [selectedMonth]);
+  }, [selectedDate]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -66,9 +70,21 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleMonthSelect = (month: string) => {
-    setSelectedMonth(month);
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(months.indexOf(month));
+    setSelectedDate(newDate);
     setShowMonthPicker(false);
-    navigation.navigate("MonthlyDetails", { month });
+    navigation.navigate("MonthlyDetails", {
+      month: format(newDate, "MMMM"),
+      year: getYear(newDate),
+    });
+  };
+
+  const handleYearSelect = (year: number) => {
+    const newDate = new Date(selectedDate);
+    newDate.setFullYear(year);
+    setSelectedDate(newDate);
+    setShowYearPicker(false);
   };
 
   const calculateTotalRevenue = () => {
@@ -102,14 +118,24 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {/* Month Selector */}
-      <TouchableOpacity
-        style={styles.monthSelector}
-        onPress={() => setShowMonthPicker(true)}
-      >
-        <Text style={styles.monthText}>{selectedMonth}</Text>
-        <Feather name="calendar" size={24} color={theme.colors.primary} />
-      </TouchableOpacity>
+      {/* Month and Year Selector */}
+      <View style={styles.dateSelectorContainer}>
+        <TouchableOpacity
+          style={styles.dateSelector}
+          onPress={() => setShowMonthPicker(true)}
+        >
+          <Text style={styles.dateText}>{format(selectedDate, "MMMM")}</Text>
+          <Feather name="calendar" size={24} color={theme.colors.primary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.dateSelector}
+          onPress={() => setShowYearPicker(true)}
+        >
+          <Text style={styles.dateText}>{format(selectedDate, "yyyy")}</Text>
+          <Feather name="calendar" size={24} color={theme.colors.primary} />
+        </TouchableOpacity>
+      </View>
 
       {/* Summary Card */}
       <Card style={styles.summaryCard}>
@@ -127,7 +153,12 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.statItem}
-            onPress={() => navigation.navigate("PaidRooms")}
+            onPress={() =>
+              navigation.navigate("PaidRooms", {
+                month: format(selectedDate, "MMMM"),
+                year: getYear(selectedDate),
+              })
+            }
           >
             <Feather
               name="check-circle"
@@ -142,7 +173,12 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.statItem}
-            onPress={() => navigation.navigate("PendingRooms")}
+            onPress={() =>
+              navigation.navigate("PendingRooms", {
+                month: format(selectedDate, "MMMM"),
+                year: getYear(selectedDate),
+              })
+            }
           >
             <Feather name="clock" size={24} color={theme.colors.warning} />
             <Text style={[styles.statValue, { color: theme.colors.warning }]}>
@@ -164,30 +200,34 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
       {/* Monthly Transactions */}
       <Card style={styles.transactionsCard}>
         <Text style={styles.cardTitle}>Monthly Transactions</Text>
-        {paidRooms.map((room) => (
-          <View key={room.roomName} style={styles.transactionItem}>
-            <View>
-              <Text style={styles.transactionRoom}>{room.roomName}</Text>
-              <Text style={styles.transactionTenant}>{room.tenantName}</Text>
-              <Text style={styles.statusText}>
-                Status: {room.status.replace(/_/g, " ")}
-              </Text>
+        {paidRooms.length > 0 ? (
+          paidRooms.map((room) => (
+            <View key={room.roomName} style={styles.transactionItem}>
+              <View>
+                <Text style={styles.transactionRoom}>{room.roomName}</Text>
+                <Text style={styles.transactionTenant}>{room.tenantName}</Text>
+                <Text style={styles.statusText}>
+                  Status: {room.status.replace(/_/g, " ")}
+                </Text>
+              </View>
+              <View>
+                <Text
+                  style={[
+                    styles.transactionAmount,
+                    { color: theme.colors.success },
+                  ]}
+                >
+                  +${room.amount}
+                </Text>
+                <Text style={styles.transactionDate}>
+                  {new Date(room.day).toLocaleDateString()}
+                </Text>
+              </View>
             </View>
-            <View>
-              <Text
-                style={[
-                  styles.transactionAmount,
-                  { color: theme.colors.success },
-                ]}
-              >
-                +${room.amount}
-              </Text>
-              <Text style={styles.transactionDate}>
-                {new Date(room.day).toLocaleDateString()}
-              </Text>
-            </View>
-          </View>
-        ))}
+          ))
+        ) : (
+          <Text style={styles.noDataText}>No transactions for this month</Text>
+        )}
       </Card>
 
       {/* Month Picker Modal */}
@@ -211,14 +251,57 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
                 <TouchableOpacity
                   style={[
                     styles.monthItem,
-                    selectedMonth === item && styles.selectedMonthItem,
+                    format(selectedDate, "MMMM") === item &&
+                      styles.selectedMonthItem,
                   ]}
                   onPress={() => handleMonthSelect(item)}
                 >
                   <Text
                     style={[
                       styles.monthItemText,
-                      selectedMonth === item && styles.selectedMonthItemText,
+                      format(selectedDate, "MMMM") === item &&
+                        styles.selectedMonthItemText,
+                    ]}
+                  >
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Year Picker Modal */}
+      <Modal
+        visible={showYearPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowYearPicker(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowYearPicker(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Year</Text>
+            <FlatList
+              data={years}
+              keyExtractor={(item) => item.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.monthItem,
+                    getYear(selectedDate) === item && styles.selectedMonthItem,
+                  ]}
+                  onPress={() => handleYearSelect(item)}
+                >
+                  <Text
+                    style={[
+                      styles.monthItemText,
+                      getYear(selectedDate) === item &&
+                        styles.selectedMonthItemText,
                     ]}
                   >
                     {item}
@@ -239,16 +322,22 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     padding: theme.spacing.md,
   },
-  monthSelector: {
+  dateSelectorContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: theme.spacing.md,
+  },
+  dateSelector: {
+    flex: 1,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: theme.colors.card,
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.md,
+    marginHorizontal: theme.spacing.xs,
   },
-  monthText: {
+  dateText: {
     fontSize: theme.typography.sizes.lg,
     fontWeight: "600",
     color: theme.colors.text.primary,
@@ -354,6 +443,12 @@ const styles = StyleSheet.create({
   selectedMonthItemText: {
     color: theme.colors.primary,
     fontWeight: "600",
+  },
+  noDataText: {
+    textAlign: "center",
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.md,
+    padding: theme.spacing.md,
   },
 });
 

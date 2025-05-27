@@ -17,25 +17,34 @@ import matchService, { MatchRoom } from "../services/matchService";
 type Props = NativeStackScreenProps<MonthlyStackParamList, "MonthlyDetails">;
 
 const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { month } = route.params;
+  const { month, year } = route.params;
   const [paidRooms, setPaidRooms] = useState<MatchRoom[]>([]);
   const [unpaidRooms, setUnpaidRooms] = useState<MatchRoom[]>([]);
 
   useEffect(() => {
     loadData();
-  }, [month]);
+  }, [month, year]);
 
   const loadData = async () => {
     try {
-      const monthName = format(new Date(month), "MMMM");
       const [paid, unpaid] = await Promise.all([
-        matchService.getPaidRooms(monthName),
-        matchService.getUnpaidRooms(monthName),
+        matchService.getPaidRooms(month, year),
+        matchService.getUnpaidRooms(month, year),
       ]);
-      setPaidRooms(paid);
-      setUnpaidRooms(unpaid);
+      setPaidRooms(Array.isArray(paid) ? paid : []);
+      setUnpaidRooms(Array.isArray(unpaid) ? unpaid : []);
     } catch (error) {
       console.error("Error loading monthly details:", error);
+      setPaidRooms([]);
+      setUnpaidRooms([]);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch (error) {
+      return "Invalid Date";
     }
   };
 
@@ -43,7 +52,7 @@ const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.monthTitle}>
-          {format(new Date(month), "MMMM yyyy")}
+          {month} {year}
         </Text>
       </View>
 
@@ -55,27 +64,31 @@ const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
             Paid Rooms
           </Text>
         </View>
-        {paidRooms.map((room) => (
-          <Card key={room.roomName} style={styles.roomCard}>
-            <View style={styles.roomInfo}>
-              <View>
-                <Text style={styles.roomNumber}>{room.roomName}</Text>
-                <Text style={styles.tenantName}>{room.tenantName}</Text>
-                <Text style={styles.statusText}>
-                  Status: {room.status.replace(/_/g, " ")}
-                </Text>
+        {paidRooms.length > 0 ? (
+          paidRooms.map((room) => (
+            <Card key={room.roomName} style={styles.roomCard}>
+              <View style={styles.roomInfo}>
+                <View>
+                  <Text style={styles.roomNumber}>{room.roomName}</Text>
+                  <Text style={styles.tenantName}>{room.tenantName}</Text>
+                  <Text style={styles.statusText}>
+                    Status: {room.status.replace(/_/g, " ")}
+                  </Text>
+                </View>
+                <View style={styles.amountContainer}>
+                  <Text
+                    style={[styles.amount, { color: theme.colors.success }]}
+                  >
+                    ${room.amount}
+                  </Text>
+                  <Text style={styles.date}>Paid: {formatDate(room.day)}</Text>
+                </View>
               </View>
-              <View style={styles.amountContainer}>
-                <Text style={[styles.amount, { color: theme.colors.success }]}>
-                  ${room.amount}
-                </Text>
-                <Text style={styles.date}>
-                  Paid: {new Date(room.day).toLocaleDateString()}
-                </Text>
-              </View>
-            </View>
-          </Card>
-        ))}
+            </Card>
+          ))
+        ) : (
+          <Text style={styles.noDataText}>No paid rooms for this month</Text>
+        )}
       </View>
 
       {/* Pending Rooms Section */}
@@ -86,27 +99,31 @@ const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
             Pending Rooms
           </Text>
         </View>
-        {unpaidRooms.map((room) => (
-          <Card key={room.roomName} style={styles.roomCard}>
-            <View style={styles.roomInfo}>
-              <View>
-                <Text style={styles.roomNumber}>{room.roomName}</Text>
-                <Text style={styles.tenantName}>{room.tenantName}</Text>
-                <Text style={styles.statusText}>
-                  Status: {room.status.replace(/_/g, " ")}
-                </Text>
+        {unpaidRooms.length > 0 ? (
+          unpaidRooms.map((room) => (
+            <Card key={room.roomName} style={styles.roomCard}>
+              <View style={styles.roomInfo}>
+                <View>
+                  <Text style={styles.roomNumber}>{room.roomName}</Text>
+                  <Text style={styles.tenantName}>{room.tenantName}</Text>
+                  <Text style={styles.statusText}>
+                    Status: {room.status.replace(/_/g, " ")}
+                  </Text>
+                </View>
+                <View style={styles.amountContainer}>
+                  <Text
+                    style={[styles.amount, { color: theme.colors.warning }]}
+                  >
+                    ${room.amount}
+                  </Text>
+                  <Text style={styles.date}>Due: {formatDate(room.day)}</Text>
+                </View>
               </View>
-              <View style={styles.amountContainer}>
-                <Text style={[styles.amount, { color: theme.colors.warning }]}>
-                  ${room.amount}
-                </Text>
-                <Text style={styles.date}>
-                  Due: {new Date(room.day).toLocaleDateString()}
-                </Text>
-              </View>
-            </View>
-          </Card>
-        ))}
+            </Card>
+          ))
+        ) : (
+          <Text style={styles.noDataText}>No pending rooms for this month</Text>
+        )}
       </View>
 
       {/* Summary Section */}
@@ -227,6 +244,13 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: theme.typography.sizes.xl,
     fontWeight: "700",
+  },
+  noDataText: {
+    textAlign: "center",
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.md,
+    padding: theme.spacing.md,
+    fontStyle: "italic",
   },
 });
 

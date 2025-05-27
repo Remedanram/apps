@@ -1,37 +1,54 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
   FlatList,
   TouchableOpacity,
   Text,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Card from "../components/Card";
 import theme from "../constants/theme";
-import { mockMonthlyRooms } from "../services/mockData";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { MonthlyStackParamList } from "../navigation/AppNavigator";
+import matchService, { MatchRoom } from "../services/matchService";
 
-interface PendingRoom {
-  id: number;
-  number: string;
-  tenant: string;
-  amount: number;
-  dueDate: string;
-  status: string;
-}
+type Props = NativeStackScreenProps<MonthlyStackParamList, "PendingRooms">;
 
-const PendingRoomsScreen = () => {
-  const renderRoomItem = ({ item }: { item: PendingRoom }) => (
+const PendingRoomsScreen: React.FC<Props> = ({ route }) => {
+  const { month, year } = route.params;
+  const [loading, setLoading] = useState(true);
+  const [unpaidRooms, setUnpaidRooms] = useState<MatchRoom[]>([]);
+
+  useEffect(() => {
+    loadData();
+  }, [month, year]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const rooms = await matchService.getUnpaidRooms(month, year);
+      setUnpaidRooms(Array.isArray(rooms) ? rooms : []);
+    } catch (error) {
+      console.error("Error loading pending rooms:", error);
+      setUnpaidRooms([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderRoomItem = ({ item }: { item: MatchRoom }) => (
     <Card style={styles.roomCard}>
       <View style={styles.roomHeader}>
         <View>
-          <Text style={styles.roomNumber}>Room {item.number}</Text>
-          <Text style={styles.tenantName}>{item.tenant}</Text>
+          <Text style={styles.roomNumber}>{item.roomName}</Text>
+          <Text style={styles.tenantName}>{item.tenantName}</Text>
         </View>
         <View style={styles.amountContainer}>
           <Text style={styles.amount}>${item.amount}</Text>
           <Text style={styles.dueDate}>
-            Due: {new Date(item.dueDate).toLocaleDateString()}
+            Due: {new Date(item.day).toLocaleDateString()}
           </Text>
         </View>
       </View>
@@ -44,13 +61,27 @@ const PendingRoomsScreen = () => {
     </Card>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={styles.loadingText}>Loading pending rooms...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
-        data={mockMonthlyRooms.pending}
+        data={unpaidRooms}
         renderItem={renderRoomItem}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.roomName}
         contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={
+          <Text style={styles.noDataText}>
+            No pending rooms for {month} {year}
+          </Text>
+        }
       />
     </View>
   );
@@ -60,6 +91,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: theme.colors.background,
+  },
+  loadingText: {
+    marginTop: theme.spacing.md,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.text.secondary,
   },
   listContainer: {
     padding: theme.spacing.md,
@@ -116,6 +158,13 @@ const styles = StyleSheet.create({
     color: theme.colors.warning,
     fontSize: theme.typography.sizes.sm,
     fontWeight: "600",
+  },
+  noDataText: {
+    textAlign: "center",
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.md,
+    padding: theme.spacing.md,
+    fontStyle: "italic",
   },
 });
 
