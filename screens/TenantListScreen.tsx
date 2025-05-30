@@ -5,6 +5,7 @@ import {
   FlatList,
   Alert,
   TouchableOpacity,
+  TextInput,
 } from "react-native";
 import { Text } from "react-native";
 import { Card } from "../components";
@@ -20,12 +21,11 @@ type Props = {
 
 const TenantListScreen: React.FC<Props> = ({ navigation }) => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [totalTenants, setTotalTenants] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchTenants();
-    fetchTotalTenants();
   }, []);
 
   const fetchTenants = async () => {
@@ -38,16 +38,6 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert("Error", "Failed to load tenants. Please try again.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchTotalTenants = async () => {
-    try {
-      const stats = await tenantService.getTotalTenants();
-      console.log("Fetched total tenants:", stats);
-      setTotalTenants(stats.totalTenants);
-    } catch (error) {
-      console.error("Error fetching total tenants:", error);
     }
   };
 
@@ -80,6 +70,13 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
       ]
     );
   };
+
+  const filteredTenants = tenants.filter(
+    (tenant) =>
+      tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tenant.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tenant.room.roomName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const renderTenantItem = ({ item }: { item: Tenant }) => (
     <Card style={styles.tenantCard}>
@@ -124,20 +121,29 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Card style={styles.statsCard}>
-        <Text style={styles.statsTitle}>Total Tenants</Text>
-        <Text style={styles.statsNumber}>{totalTenants}</Text>
-      </Card>
+      <View style={styles.searchContainer}>
+        <Feather name="search" size={20} color={theme.colors.text.secondary} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search tenants..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
 
-      <Text style={styles.sectionTitle}>Tenant List</Text>
       {loading ? (
         <Text style={styles.loadingText}>Loading tenants...</Text>
       ) : (
         <FlatList
-          data={tenants}
+          data={filteredTenants}
           renderItem={renderTenantItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No tenants found</Text>
+            </View>
+          }
         />
       )}
     </View>
@@ -150,23 +156,18 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     padding: theme.spacing.md,
   },
-  statsCard: {
-    padding: theme.spacing.lg,
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.sm,
     marginBottom: theme.spacing.md,
   },
-  statsTitle: {
-    fontSize: theme.typography.sizes.lg,
-    color: theme.colors.text.secondary,
-  },
-  statsNumber: {
-    fontSize: theme.typography.sizes.xxl,
-    fontWeight: "bold",
-    color: theme.colors.primary,
-  },
-  sectionTitle: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: "bold",
-    marginBottom: theme.spacing.md,
+  searchInput: {
+    flex: 1,
+    marginLeft: theme.spacing.sm,
+    fontSize: theme.typography.sizes.md,
   },
   listContainer: {
     paddingBottom: theme.spacing.lg,
@@ -190,6 +191,14 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     textAlign: "center",
     marginTop: theme.spacing.xl,
+  },
+  emptyContainer: {
+    padding: theme.spacing.lg,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.text.secondary,
   },
   actionButtons: {
     flexDirection: "row",
