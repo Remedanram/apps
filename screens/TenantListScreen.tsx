@@ -51,6 +51,36 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleEditTenant = (tenant: Tenant) => {
+    navigation.navigate("EditTenant", { tenant });
+  };
+
+  const handleDeleteTenant = async (tenant: Tenant) => {
+    Alert.alert(
+      "Delete Tenant",
+      `Are you sure you want to delete tenant ${tenant.name}?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await tenantService.deleteTenant(tenant.id);
+              fetchTenants(); // Reload the tenant list
+            } catch (error) {
+              console.error("Error deleting tenant:", error);
+              Alert.alert("Error", "Failed to delete tenant");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderTenantItem = ({ item }: { item: Tenant }) => (
     <Card style={styles.tenantCard}>
       <Text style={styles.tenantName}>{item.name}</Text>
@@ -65,6 +95,30 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
           Move-in Date: {new Date(item.moveInDate).toLocaleDateString()}
         </Text>
       )}
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.editButton]}
+          onPress={() => handleEditTenant(item)}
+        >
+          <Feather name="edit" size={20} color={theme.colors.primary} />
+          <Text
+            style={[styles.actionButtonText, { color: theme.colors.primary }]}
+          >
+            Edit
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.deleteButton]}
+          onPress={() => handleDeleteTenant(item)}
+        >
+          <Feather name="trash-2" size={20} color={theme.colors.error} />
+          <Text
+            style={[styles.actionButtonText, { color: theme.colors.error }]}
+          >
+            Delete
+          </Text>
+        </TouchableOpacity>
+      </View>
     </Card>
   );
 
