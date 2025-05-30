@@ -11,25 +11,25 @@ import { MonthlyStackParamList } from "../navigation/AppNavigator";
 import Card from "../components/Card";
 import { Feather } from "@expo/vector-icons";
 import theme from "../constants/theme";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import matchService, { MatchRoom } from "../services/matchService";
 
 type Props = NativeStackScreenProps<MonthlyStackParamList, "MonthlyDetails">;
 
 const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { month, year } = route.params;
+  const { period } = route.params;
   const [paidRooms, setPaidRooms] = useState<MatchRoom[]>([]);
   const [unpaidRooms, setUnpaidRooms] = useState<MatchRoom[]>([]);
 
   useEffect(() => {
     loadData();
-  }, [month, year]);
+  }, [period]);
 
   const loadData = async () => {
     try {
       const [paid, unpaid] = await Promise.all([
-        matchService.getPaidRooms(month, year),
-        matchService.getUnpaidRooms(month, year),
+        matchService.getPaidRooms(period),
+        matchService.getUnpaidRooms(period),
       ]);
       setPaidRooms(Array.isArray(paid) ? paid : []);
       setUnpaidRooms(Array.isArray(unpaid) ? unpaid : []);
@@ -48,11 +48,15 @@ const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
+  const parsedDate = parse(period, "yyyy-MM", new Date());
+  const monthName = format(parsedDate, "MMMM");
+  const year = format(parsedDate, "yyyy");
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.monthTitle}>
-          {month} {year}
+          {monthName} {year}
         </Text>
       </View>
 

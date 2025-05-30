@@ -9,6 +9,20 @@ export interface MatchRoom {
 }
 
 const matchService = {
+  // Get available years from transactions
+  getAvailableYears: async (): Promise<number[]> => {
+    try {
+      const response = await api.get("/transactions/years");
+      if (response?.data) {
+        return response.data;
+      }
+      return [];
+    } catch (error) {
+      console.error("Error in getAvailableYears:", error);
+      throw error;
+    }
+  },
+
   // Get paid rooms for a specific period (YYYY-MM)
   getPaidRooms: async (period: string): Promise<MatchRoom[]> => {
     try {

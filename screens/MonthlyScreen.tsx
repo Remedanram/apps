@@ -12,7 +12,7 @@ import {
 import Card from "../components/Card";
 import theme from "../constants/theme";
 import { Feather } from "@expo/vector-icons";
-import { format, getYear, setYear } from "date-fns";
+import { format, getYear } from "date-fns";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MonthlyStackParamList } from "../navigation/AppNavigator";
 import matchService, { MatchRoom } from "../services/matchService";
@@ -30,9 +30,21 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   const [paidRooms, setPaidRooms] = useState<MatchRoom[]>([]);
   const [unpaidRooms, setUnpaidRooms] = useState<MatchRoom[]>([]);
   const [showYearPicker, setShowYearPicker] = useState(false);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
-  const currentYear = getYear(new Date());
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+  useEffect(() => {
+    loadYears();
+  }, []);
+
+  const loadYears = async () => {
+    try {
+      const years = await matchService.getAvailableYears();
+      setAvailableYears(Array.isArray(years) ? years : []);
+    } catch (error) {
+      console.error("Error loading years:", error);
+      setAvailableYears([]);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -64,7 +76,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadData();
+    await Promise.all([loadData(), loadYears()]);
     setRefreshing(false);
   };
 
@@ -283,7 +295,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Year</Text>
             <FlatList
-              data={years}
+              data={availableYears}
               keyExtractor={(item) => item.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
