@@ -37,7 +37,11 @@ const AddTenantScreen = ({ navigation }: Props) => {
   const fetchRooms = async () => {
     try {
       const roomsList = await roomService.getAllRooms();
-      setRooms(roomsList);
+      // Filter only vacant and active rooms
+      const vacantRooms = roomsList.filter(
+        (room) => !room.occupied && room.active
+      );
+      setRooms(vacantRooms);
     } catch (error) {
       console.error("Error fetching rooms:", error);
       Alert.alert("Error", "Failed to load rooms. Please try again.");
@@ -105,7 +109,7 @@ const AddTenantScreen = ({ navigation }: Props) => {
               }
               enabled={!loading}
             >
-              <Picker.Item label="Select a room" value="" />
+              <Picker.Item label="Select a vacant room" value="" />
               {rooms.map((room) => (
                 <Picker.Item
                   key={room.roomName}
@@ -115,12 +119,18 @@ const AddTenantScreen = ({ navigation }: Props) => {
               ))}
             </Picker>
           </View>
+          {rooms.length === 0 && !loading && (
+            <Text style={styles.noRoomsText}>No vacant rooms available</Text>
+          )}
         </View>
 
         <TouchableOpacity
-          style={[styles.submitButton, loading && styles.disabledButton]}
+          style={[
+            styles.submitButton,
+            (loading || rooms.length === 0) && styles.disabledButton,
+          ]}
           onPress={handleSubmit}
-          disabled={loading}
+          disabled={loading || rooms.length === 0}
         >
           <Text style={styles.submitButtonText}>
             {loading ? "Loading Rooms..." : "Add Tenant"}
@@ -182,6 +192,12 @@ const styles = StyleSheet.create({
     color: theme.colors.card,
     fontSize: theme.typography.sizes.md,
     fontWeight: "500",
+  },
+  noRoomsText: {
+    color: theme.colors.error,
+    fontSize: theme.typography.sizes.sm,
+    marginTop: theme.spacing.xs,
+    fontStyle: "italic",
   },
 });
 
