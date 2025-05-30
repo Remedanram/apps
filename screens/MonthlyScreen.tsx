@@ -31,6 +31,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   const [unpaidRooms, setUnpaidRooms] = useState<MatchRoom[]>([]);
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
   useEffect(() => {
     loadYears();
@@ -50,23 +51,27 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
     try {
       const period = format(selectedDate, "yyyy-MM");
 
-      const [paid, unpaid, paidCountData, unpaidCountData] = await Promise.all([
-        matchService.getPaidRooms(period),
-        matchService.getUnpaidRooms(period),
-        matchService.getPaidCount(period),
-        matchService.getUnpaidCount(period),
-      ]);
+      const [paid, unpaid, paidCountData, unpaidCountData, revenue] =
+        await Promise.all([
+          matchService.getPaidRooms(period),
+          matchService.getUnpaidRooms(period),
+          matchService.getPaidCount(period),
+          matchService.getUnpaidCount(period),
+          matchService.getTotalRevenue(period),
+        ]);
 
       setPaidRooms(Array.isArray(paid) ? paid : []);
       setUnpaidRooms(Array.isArray(unpaid) ? unpaid : []);
       setPaidCount(typeof paidCountData === "number" ? paidCountData : 0);
       setUnpaidCount(typeof unpaidCountData === "number" ? unpaidCountData : 0);
+      setTotalRevenue(typeof revenue === "number" ? revenue : 0);
     } catch (error) {
       console.error("Error loading monthly data:", error);
       setPaidRooms([]);
       setUnpaidRooms([]);
       setPaidCount(0);
       setUnpaidCount(0);
+      setTotalRevenue(0);
     }
   };
 
@@ -95,10 +100,6 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
     newDate.setFullYear(year);
     setSelectedDate(newDate);
     setShowYearPicker(false);
-  };
-
-  const calculateTotalRevenue = () => {
-    return paidRooms.reduce((sum, room) => sum + room.amount, 0);
   };
 
   const calculateOccupancyRate = () => {
@@ -157,7 +158,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
               size={24}
               color={theme.colors.success}
             />
-            <Text style={styles.statValue}>${calculateTotalRevenue()}</Text>
+            <Text style={styles.statValue}>${totalRevenue}</Text>
             <Text style={styles.statLabel}>Total Revenue</Text>
           </View>
 

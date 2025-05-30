@@ -117,7 +117,10 @@ const roomService = {
   // Update a room
   updateRoom: async (id: number, roomData: Partial<Room>): Promise<Room> => {
     try {
-      const response = await api.put(`/rooms/${id}`, roomData);
+      if (!roomData.roomName) {
+        throw new Error("Room name is required for update");
+      }
+      const response = await api.put(`/rooms/${roomData.roomName}`, roomData);
       console.log("updateRoom response:", response);
       if (response?.data) {
         return response.data;
@@ -130,9 +133,9 @@ const roomService = {
   },
 
   // Delete a room
-  deleteRoom: async (id: number): Promise<void> => {
+  deleteRoom: async (roomName: string): Promise<void> => {
     try {
-      const response = await api.delete(`/rooms/${id}`);
+      const response = await api.delete(`/rooms/${roomName}`);
       console.log("deleteRoom response:", response);
       if (!response?.data) {
         throw new Error("Failed to delete room");

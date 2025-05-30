@@ -23,6 +23,20 @@ const matchService = {
     }
   },
 
+  // Get total revenue for a specific period (YYYY-MM)
+  getTotalRevenue: async (period: string): Promise<number> => {
+    try {
+      const response = await api.get(`/matches/total-paid?period=${period}`);
+      if (response?.data !== undefined) {
+        return response.data;
+      }
+      return 0;
+    } catch (error) {
+      console.error("Error in getTotalRevenue:", error);
+      throw error;
+    }
+  },
+
   // Get paid rooms for a specific period (YYYY-MM)
   getPaidRooms: async (period: string): Promise<MatchRoom[]> => {
     try {

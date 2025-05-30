@@ -12,11 +12,11 @@ import {
 import { Card } from "../components";
 import { Feather } from "@expo/vector-icons";
 import theme from "../constants/theme";
-import roomService, { Room } from "../services/roomService";
+import roomService from "../services/roomService";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
 import api from "../services/api";
-import type { Room as RoomType } from "../types/room";
+import type { Room } from "../types/room";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "RoomList">;
@@ -24,7 +24,7 @@ type Props = {
 
 const RoomListScreen: React.FC<Props> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [rooms, setRooms] = useState<RoomType[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,13 +122,43 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
     loadRooms();
   };
 
+  const handleEditRoom = (room: Room) => {
+    navigation.navigate("EditRoom", { room });
+  };
+
+  const handleDeleteRoom = async (room: Room) => {
+    Alert.alert(
+      "Delete Room",
+      `Are you sure you want to delete room ${room.roomName}?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await roomService.deleteRoom(room.roomName);
+              loadRooms(); // Reload the room list
+            } catch (error) {
+              console.error("Error deleting room:", error);
+              Alert.alert("Error", "Failed to delete room");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const filteredRooms = rooms.filter(
     (room) =>
       room.roomName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       room.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderRoomItem = ({ item }: { item: RoomType }) => (
+  const renderRoomItem = ({ item }: { item: Room }) => (
     <Card style={styles.roomCard}>
       <View style={styles.roomHeader}>
         <Text style={styles.roomNumber}>{item.roomName}</Text>
@@ -160,6 +190,30 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.roomDetails}>
         <Text style={styles.label}>Status:</Text>
         <Text style={styles.value}>{item.active ? "Active" : "Inactive"}</Text>
+      </View>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.editButton]}
+          onPress={() => handleEditRoom(item)}
+        >
+          <Feather name="edit" size={20} color={theme.colors.primary} />
+          <Text
+            style={[styles.actionButtonText, { color: theme.colors.primary }]}
+          >
+            Edit
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.deleteButton]}
+          onPress={() => handleDeleteRoom(item)}
+        >
+          <Feather name="trash-2" size={20} color={theme.colors.error} />
+          <Text
+            style={[styles.actionButtonText, { color: theme.colors.error }]}
+          >
+            Delete
+          </Text>
+        </TouchableOpacity>
       </View>
     </Card>
   );
@@ -346,6 +400,30 @@ const styles = StyleSheet.create({
   },
   testButton: {
     backgroundColor: theme.colors.secondary,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+    gap: theme.spacing.xs,
+  },
+  editButton: {
+    backgroundColor: theme.colors.primary + "20",
+  },
+  deleteButton: {
+    backgroundColor: theme.colors.error + "20",
+  },
+  actionButtonText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: "600",
   },
 });
 

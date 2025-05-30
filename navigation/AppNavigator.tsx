@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
+import { Room } from "../types/room";
 
 // Screens
 import DashboardScreen from "../screens/DashboardScreen";
@@ -20,6 +21,7 @@ import AddTenantScreen from "../screens/AddTenantScreen";
 import PaidRoomsScreen from "../screens/PaidRoomsScreen";
 import PendingRoomsScreen from "../screens/PendingRoomsScreen";
 import MonthlyDetailsScreen from "../screens/MonthlyDetailsScreen";
+import EditRoomScreen from "../screens/EditRoomScreen";
 
 // Types
 export type RootStackParamList = {
@@ -31,6 +33,7 @@ export type RootStackParamList = {
   TenantList: undefined;
   AddRoom: undefined;
   AddTenant: undefined;
+  EditRoom: { room: Room };
 };
 
 export type MonthlyStackParamList = {
@@ -152,6 +155,11 @@ const AppNavigator = () => {
           name="AddTenant"
           component={AddTenantScreen}
           options={{ headerShown: true, title: "Add Tenant" }}
+        />
+        <Stack.Screen
+          name="EditRoom"
+          component={EditRoomScreen}
+          options={{ headerShown: true, title: "Edit Room" }}
         />
       </Stack.Navigator>
     </NavigationContainer>
