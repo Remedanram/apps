@@ -48,6 +48,7 @@ const TransactionsListScreen = () => {
   const route =
     useRoute<RouteProp<Record<string, TransactionsListScreenProps>, string>>();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(
     []
   );
@@ -55,11 +56,7 @@ const TransactionsListScreen = () => {
   const [loadingRecent, setLoadingRecent] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [filters, setFilters] = useState({
-    status: route.params?.status || "",
-    room: "",
-    phone: "",
-  });
+  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const fetchRecentTransactions = async () => {
@@ -87,10 +84,7 @@ const TransactionsListScreen = () => {
     }
   };
 
-  const fetchTransactions = async (
-    pageNumber: number,
-    newFilters = filters
-  ) => {
+  const fetchTransactions = async (pageNumber: number) => {
     if (loading || (pageNumber > 1 && !hasMore)) return;
 
     setLoading(true);
@@ -99,7 +93,8 @@ const TransactionsListScreen = () => {
       console.log("Attempting to fetch all transactions...");
       const { data } = await api.get("/transactions/allTransactions");
       console.log("All transactions fetched successfully:", data);
-      setTransactions(pageNumber === 1 ? data : [...transactions, ...data]);
+      setAllTransactions(data);
+      setTransactions(data);
       setHasMore(data.length === 10);
     } catch (error) {
       console.error("Error fetching transactions:", error);
@@ -144,17 +139,30 @@ const TransactionsListScreen = () => {
     }
   }, [route.params?.showRecent]);
 
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setTransactions(allTransactions);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = allTransactions.filter(
+      (transaction) =>
+        transaction.senderName.toLowerCase().includes(query) ||
+        transaction.senderPhone.toLowerCase().includes(query) ||
+        transaction.bankTxnId.toLowerCase().includes(query) ||
+        transaction.description.toLowerCase().includes(query) ||
+        transaction.amount.toString().includes(query)
+    );
+    setTransactions(filtered);
+  }, [searchQuery, allTransactions]);
+
   const handleLoadMore = () => {
     if (!loading && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
       fetchTransactions(nextPage);
     }
-  };
-
-  const handleFilter = () => {
-    setPage(1);
-    fetchTransactions(1, filters);
   };
 
   const handleViewAll = () => {
@@ -256,44 +264,31 @@ const TransactionsListScreen = () => {
         renderRecentTransactions()
       ) : (
         <>
-          <Card variant="outlined" style={styles.filtersCard}>
-            <View style={styles.filterRow}>
-              <View style={styles.filterInput}>
-                <Feather
-                  name="hash"
-                  size={16}
-                  color={theme.colors.text.secondary}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Room"
-                  value={filters.room}
-                  onChangeText={(text) =>
-                    setFilters({ ...filters, room: text })
-                  }
-                />
-              </View>
-              <View style={styles.filterInput}>
-                <Feather
-                  name="phone"
-                  size={16}
-                  color={theme.colors.text.secondary}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Phone"
-                  value={filters.phone}
-                  onChangeText={(text) =>
-                    setFilters({ ...filters, phone: text })
-                  }
-                />
-              </View>
-              <TouchableOpacity
-                style={styles.filterButton}
-                onPress={handleFilter}
-              >
-                <Feather name="search" size={20} color="white" />
-              </TouchableOpacity>
+          <Card variant="outlined" style={styles.searchCard}>
+            <View style={styles.searchContainer}>
+              <Feather
+                name="search"
+                size={20}
+                color={theme.colors.text.secondary}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search transactions..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setSearchQuery("")}
+                  style={styles.clearButton}
+                >
+                  <Feather
+                    name="x"
+                    size={20}
+                    color={theme.colors.text.secondary}
+                  />
+                </TouchableOpacity>
+              )}
             </View>
           </Card>
 
@@ -306,7 +301,11 @@ const TransactionsListScreen = () => {
             ListEmptyComponent={() =>
               !loading && !error ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No transactions found</Text>
+                  <Text style={styles.emptyText}>
+                    {searchQuery
+                      ? "No matching transactions found"
+                      : "No transactions found"}
+                  </Text>
                 </View>
               ) : null
             }
@@ -329,32 +328,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  filtersCard: {
+  searchCard: {
     margin: theme.spacing.md,
   },
-  filterRow: {
+  searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  filterInput: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: theme.spacing.sm,
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.sm,
     paddingHorizontal: theme.spacing.sm,
   },
-  input: {
+  searchInput: {
     flex: 1,
     paddingVertical: theme.spacing.sm,
-    marginLeft: theme.spacing.xs,
+    marginLeft: theme.spacing.sm,
     fontSize: theme.typography.sizes.md,
   },
-  filterButton: {
-    backgroundColor: theme.colors.primary,
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.sm,
+  clearButton: {
+    padding: theme.spacing.xs,
   },
   transactionCard: {
     margin: theme.spacing.md,
