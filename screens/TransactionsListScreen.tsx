@@ -259,6 +259,13 @@ const TransactionsListScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Export Button Container */}
+      <View style={styles.exportButtonContainer}>
+        <TouchableOpacity style={styles.exportButton}>
+          <Text style={styles.exportButtonText}>Export</Text>
+        </TouchableOpacity>
+      </View>
+
       {renderError()}
       {route.params?.showRecent ? (
         renderRecentTransactions()
@@ -411,18 +418,19 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: theme.colors.error,
-    marginBottom: theme.spacing.sm,
-    textAlign: "center",
+    fontSize: theme.typography.sizes.md,
+    marginBottom: theme.spacing.md,
   },
   retryButton: {
     backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
   },
   retryButtonText: {
-    color: "white",
-    fontWeight: "500",
+    color: theme.colors.card,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: "bold",
   },
   emptyContainer: {
     padding: theme.spacing.xl,
@@ -431,6 +439,23 @@ const styles = StyleSheet.create({
   emptyText: {
     color: theme.colors.text.secondary,
     fontSize: theme.typography.sizes.md,
+  },
+  exportButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+  },
+  exportButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+  },
+  exportButtonText: {
+    color: theme.colors.card,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: "bold",
   },
 });
 
