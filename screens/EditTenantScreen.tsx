@@ -26,11 +26,21 @@ const EditTenantScreen: React.FC<Props> = () => {
   const { tenant } = route.params;
 
   const [name, setName] = useState(tenant.name);
+  const [moveInDate, setMoveInDate] = useState(
+    tenant.moveInDate
+      ? new Date(tenant.moveInDate).toISOString().split("T")[0]
+      : ""
+  );
+  const [moveOutDate, setMoveOutDate] = useState(
+    tenant.moveOutDate
+      ? new Date(tenant.moveOutDate).toISOString().split("T")[0]
+      : ""
+  );
   const [phone, setPhone] = useState(tenant.phone);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!name || !phone) {
+    if (!name) {
       Alert.alert("Error", "Please fill in all required fields");
       return;
     }
@@ -39,10 +49,12 @@ const EditTenantScreen: React.FC<Props> = () => {
       setLoading(true);
       const updatedTenant: Partial<Tenant> = {
         name,
+        moveInDate,
+        moveOutDate: moveOutDate || "",
         phone,
       };
 
-      await tenantService.updateTenant(tenant.id, updatedTenant);
+      await tenantService.updateTenant(tenant.room.roomName, updatedTenant);
       Alert.alert("Success", "Tenant updated successfully");
       navigation.goBack();
     } catch (error) {
@@ -64,13 +76,29 @@ const EditTenantScreen: React.FC<Props> = () => {
           placeholder="Enter tenant name"
         />
 
-        <Text style={styles.label}>Phone *</Text>
+        <Text style={styles.label}>Phone</Text>
         <TextInput
           style={styles.input}
           value={phone}
           onChangeText={setPhone}
           placeholder="Enter phone number"
           keyboardType="phone-pad"
+        />
+
+        <Text style={styles.label}>Move-in Date</Text>
+        <TextInput
+          style={styles.input}
+          value={moveInDate}
+          onChangeText={setMoveInDate}
+          placeholder="YYYY-MM-DD"
+        />
+
+        <Text style={styles.label}>Move-out Date</Text>
+        <TextInput
+          style={styles.input}
+          value={moveOutDate}
+          onChangeText={setMoveOutDate}
+          placeholder="YYYY-MM-DD (optional)"
         />
 
         <TouchableOpacity

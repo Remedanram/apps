@@ -172,6 +172,14 @@ const api = {
         method: "DELETE",
       });
 
+      // For DELETE requests, we don't need to parse the response if it's empty
+      if (
+        response.status === 204 ||
+        response.headers.get("content-length") === "0"
+      ) {
+        return { data: null };
+      }
+
       const data = await response.json();
       return { data };
     } catch (error: unknown) {

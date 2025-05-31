@@ -79,11 +79,24 @@ const tenantService = {
 
   // Update a tenant
   updateTenant: async (
-    id: number,
+    roomName: string,
     tenantData: Partial<Tenant>
   ): Promise<Tenant> => {
     try {
-      const response = await api.put(`/tenants/${id}`, tenantData);
+      // Format the data to match the server's expected format
+      const updateData = {
+        name: tenantData.name || "",
+        moveInDate: tenantData.moveInDate
+          ? new Date(tenantData.moveInDate).toISOString().split("T")[0]
+          : "",
+        moveOutDate: tenantData.moveOutDate
+          ? new Date(tenantData.moveOutDate).toISOString().split("T")[0]
+          : "",
+        roomName: roomName,
+        phone: tenantData.phone || "",
+      };
+
+      const response = await api.put(`/tenants/${roomName}`, updateData);
       console.log("updateTenant response:", response);
       if (response?.data) {
         return response.data;
@@ -96,14 +109,20 @@ const tenantService = {
   },
 
   // Delete a tenant
-  deleteTenant: async (id: number): Promise<void> => {
+  deleteTenant: async (roomName: string): Promise<void> => {
     try {
-      const response = await api.delete(`/tenants/${id}`);
-      console.log("deleteTenant response:", response);
-      if (!response?.data) {
-        throw new Error("Failed to delete tenant");
+      await api.delete(`/tenants/${roomName}`);
+      // If we get here, the deletion was successful
+      return;
+    } catch (error: any) {
+      // Check if this is a JSON parse error with empty response
+      if (
+        error.message?.includes("JSON Parse error") &&
+        error.message?.includes("Unexpected end of input")
+      ) {
+        // This is actually a success case - the server returned empty response
+        return;
       }
-    } catch (error) {
       console.error("Error in deleteTenant:", error);
       throw error;
     }

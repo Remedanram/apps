@@ -59,7 +59,7 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
           style: "destructive",
           onPress: async () => {
             try {
-              await tenantService.deleteTenant(tenant.id);
+              await tenantService.deleteTenant(tenant.room.roomName);
               fetchTenants(); // Reload the tenant list
             } catch (error) {
               console.error("Error deleting tenant:", error);

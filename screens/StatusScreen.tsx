@@ -5,6 +5,7 @@ import {
   StyleSheet,
   RefreshControl,
   Alert,
+  Dimensions,
 } from "react-native";
 import { Text } from "react-native";
 import Card from "../components/Card";
@@ -12,6 +13,24 @@ import theme from "../constants/theme";
 import { Feather } from "@expo/vector-icons";
 import roomService from "../services/roomService";
 import type { RoomStats } from "../types/room";
+
+// Mock data for the status table
+const mockRooms = [
+  { roomName: "Room1", tenant: "John Doe", status: "Paid" },
+  { roomName: "Room2", tenant: "Jane Smith", status: "Pending" },
+  { roomName: "Room3", tenant: "Mike Johnson", status: "Paid" },
+  { roomName: "Room4", tenant: "Sarah Wilson", status: "Pending" },
+  { roomName: "Room5", tenant: "Tom Brown", status: "Paid" },
+];
+
+const mockMonths = [
+  "Jan 2024",
+  "Feb 2024",
+  "Mar 2024",
+  "Apr 2024",
+  "May 2024",
+  "Jun 2024",
+];
 
 const StatusScreen = () => {
   const [loading, setLoading] = useState(true);
@@ -48,6 +67,53 @@ const StatusScreen = () => {
   const occupancyRate =
     (roomStats.activeRooms / roomStats.totalRooms) * 100 || 0;
 
+  const renderTableHeader = () => (
+    <View style={styles.tableHeader}>
+      <View style={[styles.headerCell, styles.roomCell]}>
+        <Text style={styles.headerText}>Room</Text>
+      </View>
+      {mockMonths.map((month) => (
+        <View key={month} style={styles.headerCell}>
+          <Text style={styles.headerText}>{month}</Text>
+        </View>
+      ))}
+    </View>
+  );
+
+  const renderTableRow = (room: (typeof mockRooms)[0]) => (
+    <View key={room.roomName} style={styles.tableRow}>
+      <View style={[styles.cell, styles.roomCell]}>
+        <Text style={styles.roomName}>{room.roomName}</Text>
+        <Text style={styles.tenantName}>{room.tenant}</Text>
+      </View>
+      {mockMonths.map((month) => (
+        <View key={month} style={styles.cell}>
+          <View
+            style={[
+              styles.statusIndicator,
+              {
+                backgroundColor:
+                  room.status === "Paid"
+                    ? theme.colors.success + "20"
+                    : theme.colors.warning + "20",
+              },
+            ]}
+          >
+            <Feather
+              name={room.status === "Paid" ? "check-circle" : "clock"}
+              size={16}
+              color={
+                room.status === "Paid"
+                  ? theme.colors.success
+                  : theme.colors.warning
+              }
+            />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+
   return (
     <ScrollView
       style={styles.container}
@@ -72,6 +138,16 @@ const StatusScreen = () => {
             <Text style={styles.roomStatLabel}>Inactive</Text>
           </View>
         </View>
+      </Card>
+
+      <Card style={styles.tableCard}>
+        <Text style={styles.cardTitle}>Payment Status</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View>
+            {renderTableHeader()}
+            {mockRooms.map(renderTableRow)}
+          </View>
+        </ScrollView>
       </Card>
     </ScrollView>
   );
@@ -114,6 +190,57 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.sm,
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.xs,
+  },
+  tableCard: {
+    padding: theme.spacing.md,
+  },
+  tableHeader: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
+  },
+  headerCell: {
+    padding: theme.spacing.sm,
+    width: 100,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roomCell: {
+    width: 150,
+    alignItems: "flex-start",
+  },
+  headerText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: "600",
+    color: theme.colors.text.secondary,
+  },
+  tableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  cell: {
+    padding: theme.spacing.sm,
+    width: 100,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roomName: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: "600",
+  },
+  tenantName: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
+  },
+  statusIndicator: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 
