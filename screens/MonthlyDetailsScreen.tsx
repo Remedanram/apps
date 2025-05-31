@@ -114,13 +114,18 @@ const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
                     Status: {room.status.replace(/_/g, " ")}
                   </Text>
                 </View>
-                <View style={styles.amountContainer}>
-                  <Text
-                    style={[styles.amount, { color: theme.colors.warning }]}
-                  >
-                    ${room.amount}
-                  </Text>
-                  <Text style={styles.date}>Due: {formatDate(room.day)}</Text>
+                <View style={styles.amountAndButtonContainer}>
+                  <View style={styles.amountAndDate}>
+                    <Text
+                      style={[styles.amount, { color: theme.colors.warning }]}
+                    >
+                      ${room.amount}
+                    </Text>
+                    <Text style={styles.date}>Due: {formatDate(room.day)}</Text>
+                  </View>
+                  <TouchableOpacity style={styles.payButton}>
+                    <Text style={styles.payButtonText}>Pay</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </Card>
@@ -255,6 +260,25 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.md,
     padding: theme.spacing.md,
     fontStyle: "italic",
+  },
+  amountAndButtonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  amountAndDate: {
+    alignItems: "flex-end",
+    marginRight: theme.spacing.md,
+  },
+  payButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.xs + 2,
+    paddingHorizontal: theme.spacing.sm + 4,
+    borderRadius: theme.borderRadius.sm,
+  },
+  payButtonText: {
+    color: theme.colors.card,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: "bold",
   },
 });
 

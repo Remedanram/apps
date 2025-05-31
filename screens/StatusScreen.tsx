@@ -5,7 +5,6 @@ import {
   StyleSheet,
   RefreshControl,
   Alert,
-  Dimensions,
 } from "react-native";
 import { Text } from "react-native";
 import Card from "../components/Card";
@@ -23,14 +22,7 @@ const mockRooms = [
   { roomName: "Room5", tenant: "Tom Brown", status: "Paid" },
 ];
 
-const mockMonths = [
-  "Jan 2024",
-  "Feb 2024",
-  "Mar 2024",
-  "Apr 2024",
-  "May 2024",
-  "Jun 2024",
-];
+const mockMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
 
 const StatusScreen = () => {
   const [loading, setLoading] = useState(true);
@@ -67,51 +59,65 @@ const StatusScreen = () => {
   const occupancyRate =
     (roomStats.activeRooms / roomStats.totalRooms) * 100 || 0;
 
-  const renderTableHeader = () => (
-    <View style={styles.tableHeader}>
-      <View style={[styles.headerCell, styles.roomCell]}>
+  const renderStatusCell = (status: string) => (
+    <View
+      style={[
+        styles.statusIndicator,
+        {
+          backgroundColor:
+            status === "Paid"
+              ? theme.colors.success + "20"
+              : theme.colors.warning + "20",
+        },
+      ]}
+    >
+      <Feather
+        name={status === "Paid" ? "check-circle" : "clock"}
+        size={16}
+        color={status === "Paid" ? theme.colors.success : theme.colors.warning}
+      />
+    </View>
+  );
+
+  const renderStickyRoomColumn = () => (
+    <View>
+      <View style={[styles.tableHeader, styles.stickyHeader]}>
         <Text style={styles.headerText}>Room</Text>
       </View>
-      {mockMonths.map((month) => (
-        <View key={month} style={styles.headerCell}>
-          <Text style={styles.headerText}>{month}</Text>
+      {mockRooms.map((room) => (
+        <View key={room.roomName} style={[styles.tableRow, styles.stickyRow]}>
+          <Text style={styles.roomName}>{room.roomName}</Text>
+          <Text style={styles.tenantName}>{room.tenant}</Text>
         </View>
       ))}
     </View>
   );
 
-  const renderTableRow = (room: (typeof mockRooms)[0]) => (
-    <View key={room.roomName} style={styles.tableRow}>
-      <View style={[styles.cell, styles.roomCell]}>
-        <Text style={styles.roomName}>{room.roomName}</Text>
-        <Text style={styles.tenantName}>{room.tenant}</Text>
-      </View>
-      {mockMonths.map((month) => (
-        <View key={month} style={styles.cell}>
-          <View
-            style={[
-              styles.statusIndicator,
-              {
-                backgroundColor:
-                  room.status === "Paid"
-                    ? theme.colors.success + "20"
-                    : theme.colors.warning + "20",
-              },
-            ]}
-          >
-            <Feather
-              name={room.status === "Paid" ? "check-circle" : "clock"}
-              size={16}
-              color={
-                room.status === "Paid"
-                  ? theme.colors.success
-                  : theme.colors.warning
-              }
-            />
-          </View>
+  const renderScrollableContent = () => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.scrollableContent}
+    >
+      <View>
+        <View style={styles.tableHeader}>
+          {mockMonths.map((month) => (
+            <View key={month} style={styles.headerCell}>
+              <Text style={styles.headerText}>{month}</Text>
+            </View>
+          ))}
         </View>
-      ))}
-    </View>
+        {mockRooms.map((room) => (
+          <View key={room.roomName} style={styles.tableRow}>
+            {mockMonths.map((month) => (
+              <View key={month} style={styles.cell}>
+                {renderStatusCell(room.status)}
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
+    </ScrollView>
   );
 
   return (
@@ -121,33 +127,22 @@ const StatusScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <Card style={styles.occupancyCard}>
-        <Text style={styles.cardTitle}>Occupancy Status</Text>
-        <Text style={styles.occupancyRate}>{occupancyRate.toFixed(1)}%</Text>
-        <View style={styles.roomStats}>
-          <View style={styles.roomStat}>
-            <Text style={styles.roomStatValue}>{roomStats.totalRooms}</Text>
-            <Text style={styles.roomStatLabel}>Total Rooms</Text>
-          </View>
-          <View style={styles.roomStat}>
-            <Text style={styles.roomStatValue}>{roomStats.activeRooms}</Text>
-            <Text style={styles.roomStatLabel}>Active</Text>
-          </View>
-          <View style={styles.roomStat}>
-            <Text style={styles.roomStatValue}>{roomStats.inactiveRooms}</Text>
-            <Text style={styles.roomStatLabel}>Inactive</Text>
+      <Card style={styles.tableCard}>
+        <View style={styles.tableHeaderContainer}>
+          <Text style={styles.cardTitle}>Payment Status</Text>
+          <View style={styles.tableHeaderButtons}>
+            <View style={styles.yearButton}>
+              <Text style={styles.yearButtonText}>2024 ▼</Text>
+            </View>
+            <View style={styles.exportButton}>
+              <Text style={styles.exportButtonText}>Export</Text>
+            </View>
           </View>
         </View>
-      </Card>
-
-      <Card style={styles.tableCard}>
-        <Text style={styles.cardTitle}>Payment Status</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View>
-            {renderTableHeader()}
-            {mockRooms.map(renderTableRow)}
-          </View>
-        </ScrollView>
+        <View style={styles.tableWrapper}>
+          {renderStickyRoomColumn()}
+          {renderScrollableContent()}
+        </View>
       </Card>
     </ScrollView>
   );
@@ -159,72 +154,105 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     padding: theme.spacing.md,
   },
-  occupancyCard: {
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
   cardTitle: {
     fontSize: theme.typography.sizes.lg,
     fontWeight: "600",
-    marginBottom: theme.spacing.md,
-  },
-  occupancyRate: {
-    fontSize: theme.typography.sizes.xxxl,
-    fontWeight: "700",
-    color: theme.colors.primary,
-    textAlign: "center",
-    marginBottom: theme.spacing.md,
-  },
-  roomStats: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  roomStat: {
-    alignItems: "center",
-  },
-  roomStatValue: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: "700",
-  },
-  roomStatLabel: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.text.secondary,
-    marginTop: theme.spacing.xs,
   },
   tableCard: {
     padding: theme.spacing.md,
+    marginTop: theme.spacing.md,
+  },
+  tableHeaderContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: theme.spacing.md,
+  },
+  tableHeaderButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  yearButton: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    marginRight: theme.spacing.sm,
+  },
+  yearButtonText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.primary,
+  },
+  tableWrapper: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.md,
+    overflow: "hidden",
+    backgroundColor: theme.colors.card,
+  },
+  stickyColumn: {
+    backgroundColor: theme.colors.card,
+    zIndex: 1,
+    width: 150,
+    borderRightWidth: 1,
+    borderRightColor: theme.colors.border,
+  },
+  stickyHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.sm,
+    alignItems: "flex-start",
+    justifyContent: "center",
+    height: 40,
+  },
+  stickyRow: {
+    flexDirection: "column",
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.sm,
+    justifyContent: "center",
+    height: 52,
+  },
+  scrollableContent: {
+    flex: 1,
   },
   tableHeader: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
     backgroundColor: theme.colors.card,
+    height: 40,
   },
   headerCell: {
     padding: theme.spacing.sm,
     width: 100,
     alignItems: "center",
     justifyContent: "center",
-  },
-  roomCell: {
-    width: 150,
-    alignItems: "flex-start",
-  },
-  headerText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: "600",
-    color: theme.colors.text.secondary,
+    borderRightWidth: 1,
+    borderRightColor: theme.colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   tableRow: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    height: 52,
   },
   cell: {
     padding: theme.spacing.sm,
     width: 100,
     alignItems: "center",
     justifyContent: "center",
+    borderRightWidth: 1,
+    borderRightColor: theme.colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  headerText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: "600",
+    color: theme.colors.text.secondary,
   },
   roomName: {
     fontSize: theme.typography.sizes.md,
@@ -241,6 +269,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+  },
+  exportButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+  },
+  exportButtonText: {
+    color: theme.colors.card,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: "bold",
   },
 });
 

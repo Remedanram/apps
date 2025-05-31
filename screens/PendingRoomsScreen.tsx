@@ -52,11 +52,14 @@ const PendingRoomsScreen: React.FC<Props> = ({ route }) => {
           </Text>
         </View>
       </View>
-      <View style={styles.statusContainer}>
+      <View style={styles.statusAndButtonContainer}>
         <View style={styles.statusBadge}>
           <Feather name="clock" size={16} color={theme.colors.warning} />
           <Text style={styles.statusText}>Pending</Text>
         </View>
+        <TouchableOpacity style={styles.payButton}>
+          <Text style={styles.payButtonText}>Pay</Text>
+        </TouchableOpacity>
       </View>
     </Card>
   );
@@ -136,7 +139,10 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.xs,
   },
-  statusContainer: {
+  statusAndButtonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: theme.spacing.md,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
@@ -149,7 +155,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
     borderRadius: theme.borderRadius.sm,
-    alignSelf: "flex-start",
   },
   statusText: {
     marginLeft: theme.spacing.xs,
@@ -163,6 +168,17 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.md,
     padding: theme.spacing.md,
     fontStyle: "italic",
+  },
+  payButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.xs + 2,
+    paddingHorizontal: theme.spacing.sm + 4,
+    borderRadius: theme.borderRadius.sm,
+  },
+  payButtonText: {
+    color: theme.colors.card,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: "bold",
   },
 });
 
