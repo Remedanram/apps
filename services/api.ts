@@ -107,11 +107,14 @@ const fetchWithTimeout = async (
 const api = {
   async get(endpoint: string) {
     try {
+      console.log("[API GET] Requesting:", `${BASE_URL}${endpoint}`);
       const response = await fetchWithTimeout(`${BASE_URL}${endpoint}`, {
         method: "GET",
       });
 
+      console.log("[API GET] Raw response:", response);
       const data = await response.json();
+      console.log("[API GET] Parsed data:", data);
       return { data };
     } catch (error: unknown) {
       console.error("[API GET Error]", {

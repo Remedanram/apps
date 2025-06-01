@@ -3,9 +3,14 @@ import api from "./api";
 export interface MatchRoom {
   roomName: string;
   tenantName: string;
+  phone: string;
   amount: number;
-  day: string;
-  status: "MATCHED_EXACT" | "MATCHED_OVERPAID" | "PENDING_UNDERPAID";
+  day: string | null;
+  status:
+    | "MATCHED_EXACT"
+    | "MATCHED_OVERPAID"
+    | "PENDING_UNDERPAID"
+    | "PENDING";
 }
 
 const matchService = {
@@ -54,10 +59,14 @@ const matchService = {
   // Get unpaid rooms for a specific period (YYYY-MM)
   getUnpaidRooms: async (period: string): Promise<MatchRoom[]> => {
     try {
+      console.log("Fetching unpaid rooms for period:", period);
       const response = await api.get(`/matches/unpaid-rooms?period=${period}`);
+      console.log("API response:", response);
       if (response?.data) {
+        console.log("Parsed data:", response.data);
         return response.data;
       }
+      console.log("No data in response");
       return [];
     } catch (error) {
       console.error("Error in getUnpaidRooms:", error);

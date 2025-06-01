@@ -70,7 +70,14 @@ const StatusScreen = () => {
     try {
       const response = await api.get(`/matches/payment-status?year=${year}`);
       if (response.data) {
-        setPaymentStatusData(response.data as RoomPaymentStatus[]);
+        const sortedData = (response.data as RoomPaymentStatus[]).sort(
+          (a, b) => {
+            const roomNumA = parseInt(a.roomName.replace("Room ", ""), 10);
+            const roomNumB = parseInt(b.roomName.replace("Room ", ""), 10);
+            return roomNumA - roomNumB;
+          }
+        );
+        setPaymentStatusData(sortedData);
       } else {
         setPaymentStatusData([]);
       }
