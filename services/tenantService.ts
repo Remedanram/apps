@@ -1,16 +1,24 @@
 import api from "./api";
 
+export enum TenantStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+}
+
 export interface Tenant {
   id: number;
   name: string;
   phone: string;
+  email: string;
   moveInDate: string;
   moveOutDate: string | null;
+  status: TenantStatus;
   room: {
     roomName: string;
     rentAmount: number;
     description: string;
     active: boolean;
+    occupied: boolean;
   };
 }
 
@@ -23,6 +31,7 @@ export interface TenantStats {
 export interface CreateTenantRequest {
   name: string;
   phone: string;
+  email: string;
   roomName: string;
 }
 
@@ -60,17 +69,19 @@ const tenantService = {
   // Get total number of tenants
   getTotalTenants: async (): Promise<TenantStats> => {
     try {
-      const response = await api.get("/tenants/totalTenants");
-      console.log("getTotalTenants response:", response);
-      if (response?.data) {
-        // Convert the number response to TenantStats format
-        return {
-          totalTenants: response.data,
-          activeTenants: response.data, // Since we don't have this info, using total as active
-          inactiveTenants: 0, // Since we don't have this info, defaulting to 0
-        };
-      }
-      throw new Error("Failed to get tenant stats");
+      const tenants = await tenantService.getAllTenants();
+      console.log("getTotalTenants response:", tenants);
+
+      const stats = {
+        totalTenants: tenants.length,
+        activeTenants: tenants.filter((t) => t.status === TenantStatus.ACTIVE)
+          .length,
+        inactiveTenants: tenants.filter(
+          (t) => t.status === TenantStatus.INACTIVE
+        ).length,
+      };
+
+      return stats;
     } catch (error) {
       console.error("Error in getTotalTenants:", error);
       throw error;
@@ -94,6 +105,8 @@ const tenantService = {
           : "",
         roomName: roomName,
         phone: tenantData.phone || "",
+        email: tenantData.email || "",
+        status: tenantData.status || TenantStatus.ACTIVE,
       };
 
       const response = await api.put(`/tenants/${roomName}`, updateData);
@@ -124,6 +137,25 @@ const tenantService = {
         return;
       }
       console.error("Error in deleteTenant:", error);
+      throw error;
+    }
+  },
+
+  // Deactivate a tenant
+  deactivateTenant: async (roomName: string): Promise<void> => {
+    try {
+      const response = await api.put(`/tenants/${roomName}/deactivate`, {
+        status: TenantStatus.INACTIVE,
+      });
+      console.log("deactivateTenant response:", response);
+
+      // Check if we got a successful response (either JSON or text)
+      if (response?.data) {
+        return; // Success case
+      }
+      throw new Error("Failed to deactivate tenant");
+    } catch (error) {
+      console.error("Error in deactivateTenant:", error);
       throw error;
     }
   },

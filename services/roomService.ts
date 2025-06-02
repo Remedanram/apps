@@ -18,6 +18,11 @@ interface RoomFilters {
   search?: string;
 }
 
+interface RoomCount {
+  occupiedCount: number;
+  vacantCount: number;
+}
+
 const roomService = {
   // Get all rooms
   getAllRooms: async (): Promise<Room[]> => {
@@ -25,7 +30,13 @@ const roomService = {
       const response = await api.get("/rooms");
       console.log("getAllRooms response:", response);
       if (response?.data) {
-        return response.data;
+        // Check if the response is wrapped in a data property
+        const rooms = Array.isArray(response.data)
+          ? response.data
+          : response.data.data
+          ? response.data.data
+          : [];
+        return rooms;
       }
       return [];
     } catch (error) {
@@ -34,15 +45,29 @@ const roomService = {
     }
   },
 
+  // Get room counts
+  getRoomCounts: async (): Promise<RoomCount> => {
+    try {
+      const response = await api.get("/rooms/count");
+      console.log("getRoomCounts response:", response);
+      if (response?.data) {
+        return {
+          occupiedCount: response.data.occupiedCount || 0,
+          vacantCount: response.data.vacantCount || 0,
+        };
+      }
+      return { occupiedCount: 0, vacantCount: 0 };
+    } catch (error) {
+      console.error("Error in getRoomCounts:", error);
+      throw error;
+    }
+  },
+
   // Get vacant rooms
   getVacantRooms: async (): Promise<number> => {
     try {
-      const response = await api.get("/rooms/vacantRooms");
-      console.log("getVacantRooms response:", response);
-      if (response?.data) {
-        return response.data;
-      }
-      return 0;
+      const counts = await roomService.getRoomCounts();
+      return counts.vacantCount;
     } catch (error) {
       console.error("Error in getVacantRooms:", error);
       throw error;
@@ -52,12 +77,8 @@ const roomService = {
   // Get occupied rooms
   getOccupiedRooms: async (): Promise<number> => {
     try {
-      const response = await api.get("/rooms/occupiedRooms");
-      console.log("getOccupiedRooms response:", response);
-      if (response?.data) {
-        return response.data;
-      }
-      return 0;
+      const counts = await roomService.getRoomCounts();
+      return counts.occupiedCount;
     } catch (error) {
       console.error("Error in getOccupiedRooms:", error);
       throw error;
@@ -82,17 +103,12 @@ const roomService = {
   // Get total number of rooms
   getTotalRooms: async (): Promise<RoomStats> => {
     try {
-      const response = await api.get("/rooms/totalRooms");
-      console.log("getTotalRooms response:", response);
-      if (response?.data) {
-        // Convert the number response to RoomStats format
-        return {
-          totalRooms: response.data,
-          activeRooms: response.data, // Since we don't have this info, using total as active
-          inactiveRooms: 0, // Since we don't have this info, defaulting to 0
-        };
-      }
-      throw new Error("Failed to get room stats");
+      const counts = await roomService.getRoomCounts();
+      return {
+        totalRooms: counts.occupiedCount + counts.vacantCount,
+        activeRooms: counts.occupiedCount + counts.vacantCount, // Since we don't have this info, using total
+        inactiveRooms: 0, // Since we don't have this info, defaulting to 0
+      };
     } catch (error) {
       console.error("Error in getTotalRooms:", error);
       throw error;

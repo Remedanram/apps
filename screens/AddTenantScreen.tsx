@@ -25,6 +25,7 @@ const AddTenantScreen = ({ navigation }: Props) => {
   const [tenantData, setTenantData] = useState({
     name: "",
     phone: "",
+    email: "",
     roomName: "",
   });
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -53,6 +54,13 @@ const AddTenantScreen = ({ navigation }: Props) => {
   const handleSubmit = async () => {
     if (!tenantData.name || !tenantData.phone || !tenantData.roomName) {
       Alert.alert("Error", "Please fill in all required fields");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (tenantData.email && !emailRegex.test(tenantData.email)) {
+      Alert.alert("Error", "Please enter a valid email address");
       return;
     }
 
@@ -96,6 +104,20 @@ const AddTenantScreen = ({ navigation }: Props) => {
             }
             placeholder="Enter phone number"
             keyboardType="phone-pad"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            value={tenantData.email}
+            onChangeText={(text) =>
+              setTenantData({ ...tenantData, email: text })
+            }
+            placeholder="Enter email address"
+            keyboardType="email-address"
+            autoCapitalize="none"
           />
         </View>
 

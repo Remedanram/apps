@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
 // Use the IP address that works in Postman
-const BASE_URL = "http://192.168.1.5:8888/api";
+const BASE_URL = "http://192.168.1.9:8888/api";
 
 // Reduce timeout and add retry configuration
 const TIMEOUT = 10000; // 10 seconds timeout
@@ -155,8 +155,16 @@ const api = {
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
-      return { data };
+      // Check content type to determine how to parse the response
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        return { data };
+      } else {
+        // For non-JSON responses, return the text
+        const text = await response.text();
+        return { data: text };
+      }
     } catch (error: unknown) {
       console.error("[API PUT Error]", {
         message: error instanceof Error ? error.message : "Unknown error",

@@ -29,6 +29,7 @@ const AddRoomScreen: React.FC<Props> = ({ navigation }) => {
     rentAmount: 0,
     description: "",
     active: true,
+    occupied: false,
   });
   const [rentAmountText, setRentAmountText] = useState("");
 

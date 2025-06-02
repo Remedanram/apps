@@ -71,17 +71,49 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
     );
   };
 
+  const handleDeactivateTenant = async (tenant: Tenant) => {
+    Alert.alert(
+      "Deactivate Tenant",
+      `Are you sure you want to deactivate tenant ${tenant.name}?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Deactivate",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await tenantService.deactivateTenant(tenant.room.roomName);
+              Alert.alert("Success", "Tenant deactivated successfully");
+              fetchTenants(); // Reload the tenant list
+            } catch (error) {
+              console.error("Error deactivating tenant:", error);
+              Alert.alert("Error", "Failed to deactivate tenant");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const filteredTenants = tenants.filter(
     (tenant) =>
       tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tenant.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tenant.room.roomName.toLowerCase().includes(searchQuery.toLowerCase())
+      tenant.room.roomName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (tenant.email &&
+        tenant.email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const renderTenantItem = ({ item }: { item: Tenant }) => (
     <Card style={styles.tenantCard}>
       <Text style={styles.tenantName}>{item.name}</Text>
       <Text style={styles.tenantDetails}>Phone: {item.phone}</Text>
+      {item.email && (
+        <Text style={styles.tenantDetails}>Email: {item.email}</Text>
+      )}
       <Text style={styles.tenantDetails}>Room: {item.room.roomName}</Text>
       <Text style={styles.tenantDetails}>Rent: ${item.room.rentAmount}</Text>
       <Text style={styles.tenantDetails}>
@@ -102,6 +134,17 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
             style={[styles.actionButtonText, { color: theme.colors.primary }]}
           >
             Edit
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.deactivateButton]}
+          onPress={() => handleDeactivateTenant(item)}
+        >
+          <Feather name="user-x" size={20} color={theme.colors.warning} />
+          <Text
+            style={[styles.actionButtonText, { color: theme.colors.warning }]}
+          >
+            Deactivate
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -221,6 +264,9 @@ const styles = StyleSheet.create({
   },
   editButton: {
     backgroundColor: theme.colors.primary + "20",
+  },
+  deactivateButton: {
+    backgroundColor: theme.colors.warning + "20",
   },
   deleteButton: {
     backgroundColor: theme.colors.error + "20",
