@@ -37,6 +37,7 @@ const EditTenantScreen: React.FC<Props> = () => {
       : ""
   );
   const [phone, setPhone] = useState(tenant.phone);
+  const [email, setEmail] = useState(tenant.email || "");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -52,6 +53,7 @@ const EditTenantScreen: React.FC<Props> = () => {
         moveInDate,
         moveOutDate: moveOutDate || "",
         phone,
+        email,
       };
 
       await tenantService.updateTenant(tenant.room.roomName, updatedTenant);
@@ -83,6 +85,16 @@ const EditTenantScreen: React.FC<Props> = () => {
           onChangeText={setPhone}
           placeholder="Enter phone number"
           keyboardType="phone-pad"
+        />
+
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Enter email address (optional)"
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
 
         <Text style={styles.label}>Move-in Date</Text>

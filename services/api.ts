@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
 // Use the IP address that works in Postman
-const BASE_URL = "http://192.168.1.9:8888/api";
+const BASE_URL = "http://192.168.20.127:8888/api";
 
 // Reduce timeout and add retry configuration
 const TIMEOUT = 10000; // 10 seconds timeout
@@ -60,36 +60,29 @@ const fetchWithTimeout = async (
 
     // Check if response is ok
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Try to parse the error response as JSON
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { message: `HTTP error! status: ${response.status}` };
+      }
+      throw { response: { data: errorData, status: response.status } };
     }
 
     return response;
   } catch (error: unknown) {
     clearTimeout(timeoutId);
 
-    // Enhanced error logging
-    const errorDetails = {
-      url,
-      method: options.method || "GET",
-      retryCount,
-      timestamp: new Date().toISOString(),
-      error:
-        error instanceof Error
-          ? {
-              name: error.name,
-              message: error.message,
-              stack: error.stack,
-            }
-          : "Unknown error",
-    };
-
-    console.error("[API Request Failed]", errorDetails);
-
     // Implement retry logic
     if (retryCount < MAX_RETRIES) {
-      console.log(`Retrying request (${retryCount + 1}/${MAX_RETRIES})...`);
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
       return fetchWithTimeout(url, options, retryCount + 1);
+    }
+
+    // If we have an error response with data, throw it
+    if (error && typeof error === "object" && "response" in error) {
+      throw error;
     }
 
     if (error instanceof Error) {

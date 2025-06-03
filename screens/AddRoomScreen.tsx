@@ -54,12 +54,21 @@ const AddRoomScreen: React.FC<Props> = ({ navigation }) => {
         },
       ]);
     } catch (error: any) {
-      console.error("Error creating room:", error);
-      Alert.alert(
-        "Error",
-        error.response?.data?.message ||
-          "Failed to create room. Please try again."
-      );
+      const errorMessage =
+        error.message || "Failed to create room. Please try again.";
+
+      // Show error alert with specific handling for duplicate room names
+      Alert.alert("", errorMessage, [
+        {
+          text: "OK",
+          onPress: () => {
+            // Clear only the room name field if it's a duplicate name error
+            if (errorMessage.includes("already exists")) {
+              setRoomData((prev) => ({ ...prev, roomName: "" }));
+            }
+          },
+        },
+      ]);
     } finally {
       setLoading(false);
     }

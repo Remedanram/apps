@@ -44,10 +44,9 @@ const EditRoomScreen: React.FC<Props> = () => {
         description,
         rentAmount: parseFloat(rentAmount),
         active,
-        occupied: room.occupied, // Preserve the occupied status
       };
 
-      await roomService.updateRoom(room.id!, updatedRoom);
+      await roomService.updateRoom(room.roomName, updatedRoom);
       Alert.alert("Success", "Room updated successfully");
       navigation.goBack();
     } catch (error) {

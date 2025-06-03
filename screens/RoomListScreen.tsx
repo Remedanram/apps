@@ -140,7 +140,8 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
           style: "destructive",
           onPress: async () => {
             try {
-              await roomService.deleteRoom(room.roomName);
+              const message = await roomService.deleteRoom(room.roomName);
+              Alert.alert("Success", message);
               loadRooms(); // Reload the room list
             } catch (error) {
               console.error("Error deleting room:", error);

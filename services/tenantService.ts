@@ -122,9 +122,9 @@ const tenantService = {
   },
 
   // Delete a tenant
-  deleteTenant: async (roomName: string): Promise<void> => {
+  deleteTenant: async (roomName: string, phone: string): Promise<void> => {
     try {
-      await api.delete(`/tenants/${roomName}`);
+      await api.delete(`/tenants/${roomName}/${phone}`);
       // If we get here, the deletion was successful
       return;
     } catch (error: any) {
@@ -147,14 +147,15 @@ const tenantService = {
       const response = await api.put(`/tenants/${roomName}/deactivate`, {
         status: TenantStatus.INACTIVE,
       });
-      console.log("deactivateTenant response:", response);
 
-      // Check if we got a successful response (either JSON or text)
-      if (response?.data) {
-        return; // Success case
+      // The backend returns 200 OK with no body on success
+      // If we get here, the deactivation was successful
+      return;
+    } catch (error: any) {
+      // If the error has a response with a message, use that
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
       }
-      throw new Error("Failed to deactivate tenant");
-    } catch (error) {
       console.error("Error in deactivateTenant:", error);
       throw error;
     }

@@ -89,14 +89,26 @@ const roomService = {
   createRoom: async (roomData: CreateRoomRequest): Promise<Room> => {
     try {
       const response = await api.post("/rooms", roomData);
-      console.log("createRoom response:", response);
       if (response?.data) {
         return response.data;
       }
       throw new Error("Failed to create room");
-    } catch (error) {
-      console.error("Error in createRoom:", error);
-      throw error;
+    } catch (error: any) {
+      // Get the error message from the response
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to create room. Please try again.";
+
+      // Check if it's a duplicate room error
+      if (errorMessage.toLowerCase().includes("already exists")) {
+        const roomName = errorMessage.match(/'([^']+)'/)?.[1] || "this name";
+        throw new Error(
+          `${roomName} already exists. Please choose a different room name.`
+        );
+      }
+
+      // For any other error, throw with the original message
+      throw new Error(errorMessage);
     }
   },
 
@@ -131,12 +143,19 @@ const roomService = {
   },
 
   // Update a room
-  updateRoom: async (id: number, roomData: Partial<Room>): Promise<Room> => {
+  updateRoom: async (
+    roomName: string,
+    roomData: Partial<Room>
+  ): Promise<Room> => {
     try {
-      if (!roomData.roomName) {
-        throw new Error("Room name is required for update");
-      }
-      const response = await api.put(`/rooms/${roomData.roomName}`, roomData);
+      const updateData = {
+        roomName: roomData.roomName,
+        rentAmount: roomData.rentAmount,
+        description: roomData.description,
+        active: roomData.active,
+      };
+
+      const response = await api.put(`/rooms/${roomName}`, updateData);
       console.log("updateRoom response:", response);
       if (response?.data) {
         return response.data;
@@ -149,14 +168,16 @@ const roomService = {
   },
 
   // Delete a room
-  deleteRoom: async (roomName: string): Promise<void> => {
+  deleteRoom: async (roomName: string): Promise<string> => {
     try {
-      const response = await api.delete(`/rooms/${roomName}`);
-      console.log("deleteRoom response:", response);
-      if (!response?.data) {
-        throw new Error("Failed to delete room");
+      await api.delete(`/rooms/${roomName}`);
+      // If we get here, the deletion was successful (204 NO_CONTENT)
+      return "Room deleted successfully";
+    } catch (error: any) {
+      // If the error has a response with a message, use that
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
       }
-    } catch (error) {
       console.error("Error in deleteRoom:", error);
       throw error;
     }

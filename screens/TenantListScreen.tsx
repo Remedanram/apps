@@ -59,7 +59,10 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
           style: "destructive",
           onPress: async () => {
             try {
-              await tenantService.deleteTenant(tenant.room.roomName);
+              await tenantService.deleteTenant(
+                tenant.room.roomName,
+                tenant.phone
+              );
               fetchTenants(); // Reload the tenant list
             } catch (error) {
               console.error("Error deleting tenant:", error);
@@ -97,15 +100,6 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
       ]
     );
   };
-
-  const filteredTenants = tenants.filter(
-    (tenant) =>
-      tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tenant.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tenant.room.roomName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (tenant.email &&
-        tenant.email.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
 
   const renderTenantItem = ({ item }: { item: Tenant }) => (
     <Card style={styles.tenantCard}>
@@ -160,6 +154,15 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
     </Card>
+  );
+
+  const filteredTenants = tenants.filter(
+    (tenant) =>
+      tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tenant.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tenant.room.roomName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (tenant.email &&
+        tenant.email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
