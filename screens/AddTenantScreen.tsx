@@ -27,6 +27,7 @@ const AddTenantScreen = ({ navigation }: Props) => {
     phone: "",
     email: "",
     roomName: "",
+    description: "",
   });
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,6 +119,20 @@ const AddTenantScreen = ({ navigation }: Props) => {
             placeholder="Enter email address"
             keyboardType="email-address"
             autoCapitalize="none"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Description</Text>
+          <TextInput
+            style={[styles.input, { height: 100, textAlignVertical: "top" }]}
+            value={tenantData.description}
+            onChangeText={(text) =>
+              setTenantData({ ...tenantData, description: text })
+            }
+            placeholder="Enter tenant description"
+            multiline
+            numberOfLines={4}
           />
         </View>
 

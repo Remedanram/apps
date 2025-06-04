@@ -111,7 +111,10 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.tenantDetails}>Room: {item.room.roomName}</Text>
       <Text style={styles.tenantDetails}>Rent: ${item.room.rentAmount}</Text>
       <Text style={styles.tenantDetails}>
-        Description: {item.room.description}
+        Room Description: {item.room.description || ""}
+      </Text>
+      <Text style={styles.tenantDetails}>
+        Tenant Description: {item.description || ""}
       </Text>
       {item.moveInDate && (
         <Text style={styles.tenantDetails}>

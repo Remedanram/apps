@@ -13,6 +13,7 @@ export interface Tenant {
   moveInDate: string;
   moveOutDate: string | null;
   status: TenantStatus;
+  description: string;
   room: {
     roomName: string;
     rentAmount: number;
@@ -33,6 +34,7 @@ export interface CreateTenantRequest {
   phone: string;
   email: string;
   roomName: string;
+  description: string;
 }
 
 const tenantService = {
@@ -107,6 +109,7 @@ const tenantService = {
         phone: tenantData.phone || "",
         email: tenantData.email || "",
         status: tenantData.status || TenantStatus.ACTIVE,
+        description: tenantData.description || "",
       };
 
       const response = await api.put(`/tenants/${roomName}`, updateData);

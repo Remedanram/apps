@@ -38,6 +38,7 @@ const EditTenantScreen: React.FC<Props> = () => {
   );
   const [phone, setPhone] = useState(tenant.phone);
   const [email, setEmail] = useState(tenant.email || "");
+  const [description, setDescription] = useState(tenant.description || "");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -54,6 +55,7 @@ const EditTenantScreen: React.FC<Props> = () => {
         moveOutDate: moveOutDate || "",
         phone,
         email,
+        description,
       };
 
       await tenantService.updateTenant(tenant.room.roomName, updatedTenant);
@@ -95,6 +97,16 @@ const EditTenantScreen: React.FC<Props> = () => {
           placeholder="Enter email address (optional)"
           keyboardType="email-address"
           autoCapitalize="none"
+        />
+
+        <Text style={styles.label}>Description</Text>
+        <TextInput
+          style={[styles.input, { height: 100, textAlignVertical: "top" }]}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Enter tenant description"
+          multiline
+          numberOfLines={4}
         />
 
         <Text style={styles.label}>Move-in Date</Text>
