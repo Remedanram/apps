@@ -39,10 +39,20 @@ const authService = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
     try {
       const response = await api.post("/auth/login", data);
-      if (response?.data) {
-        return response.data;
+      console.log("Login response:", response);
+
+      // Check if we have a valid response with token
+      if (response?.data?.token) {
+        return {
+          token: response.data.token,
+          user: {
+            id: response.data.user?.id || 0,
+            name: response.data.user?.name || "",
+            email: response.data.user?.email || data.email,
+          },
+        };
       }
-      throw new Error("Failed to login");
+      throw new Error("Invalid login response");
     } catch (error) {
       console.error("Error in login:", error);
       throw error;

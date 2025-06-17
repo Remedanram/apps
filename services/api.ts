@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
 // Use the IP address that works in Postman
-const BASE_URL = "http://192.168.20.63:8888/api";
+const BASE_URL = "http://192.168.20.61:8888/api";
 
 // Reduce timeout and add retry configuration
 const TIMEOUT = 10000; // 10 seconds timeout
@@ -10,10 +10,14 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second delay between retries
 
 // Common headers for all requests
-const getCommonHeaders = () => ({
-  Accept: "application/json",
-  "Content-Type": "application/json",
-});
+const getCommonHeaders = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  return {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
 
 // Helper function to add timeout to fetch with retry logic
 const fetchWithTimeout = async (
@@ -38,7 +42,7 @@ const fetchWithTimeout = async (
 
     // Merge common headers with provided headers
     const headers = {
-      ...getCommonHeaders(),
+      ...(await getCommonHeaders()),
       ...(options.headers || {}),
     };
 
@@ -205,7 +209,7 @@ const api = {
       const pingStart = Date.now();
       const pingResponse = await fetch(`${BASE_URL}/health`, {
         method: "GET",
-        headers: getCommonHeaders(),
+        headers: await getCommonHeaders(),
       });
       const pingTime = Date.now() - pingStart;
 

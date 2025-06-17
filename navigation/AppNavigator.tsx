@@ -24,10 +24,12 @@ import PendingRoomsScreen from "../screens/PendingRoomsScreen";
 import MonthlyDetailsScreen from "../screens/MonthlyDetailsScreen";
 import EditRoomScreen from "../screens/EditRoomScreen";
 import EditTenantScreen from "../screens/EditTenantScreen";
+import BuildingSelectionScreen from "../screens/BuildingSelectionScreen";
 
 // Types
 export type RootStackParamList = {
   Auth: undefined;
+  BuildingSelection: undefined;
   Main: undefined;
   TenantLedger: { phoneNumber: string };
   TransactionsList: { status?: string };
@@ -128,6 +130,10 @@ const AppNavigator = () => {
         }}
       >
         <Stack.Screen name="Auth" component={LoginScreen} />
+        <Stack.Screen
+          name="BuildingSelection"
+          component={BuildingSelectionScreen}
+        />
         <Stack.Screen name="Main" component={MainTabs} />
         <Stack.Screen
           name="TenantLedger"

@@ -43,19 +43,34 @@ const LoginScreen = () => {
       let response;
       if (isLogin) {
         response = await authService.login({ email, password });
+        console.log("Login response received:", response);
+
+        if (!response?.token) {
+          throw new Error("No token received from server");
+        }
+
+        // Store auth data
+        await AsyncStorage.setItem("userToken", response.token);
+        await AsyncStorage.setItem(
+          "userData",
+          JSON.stringify({
+            id: response.user.id,
+            name: response.user.name,
+            email: response.user.email,
+          })
+        );
+
+        // Navigate to building selection screen
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "BuildingSelection" as never }],
+        });
       } else {
         response = await authService.signup({ name, email, password });
+        // After successful signup, switch to login mode
+        setIsLogin(true);
+        Alert.alert("Success", "Account created successfully. Please login.");
       }
-
-      // Store auth data
-      await AsyncStorage.setItem("userToken", response.token);
-      await AsyncStorage.setItem("userData", JSON.stringify(response.user));
-
-      // Navigate to main screen
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Main" as never }],
-      });
     } catch (error: any) {
       console.error("Auth error:", error);
       Alert.alert(
