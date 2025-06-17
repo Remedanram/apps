@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { Room } from "../types/room";
-import { Tenant } from "../services/tenantService";
+import { Tenant } from "../types/tenant";
 
 // Screens
 import DashboardScreen from "../screens/DashboardScreen";
@@ -93,16 +93,27 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator
         initialRouteName="Auth"
-        screenOptions={{
-          headerShown: false,
-        }}
+        screenOptions={
+          {
+            // headerShown: false,
+          }
+        }
       >
-        <Stack.Screen name="Auth" component={LoginScreen} />
+        <Stack.Screen
+          name="Auth"
+          component={LoginScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="BuildingSelection"
           component={BuildingSelectionScreen}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen name="Main" component={MainTabs} />
+        <Stack.Screen
+          name="Main"
+          component={MainTabs}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="TenantLedger" component={TenantLedgerScreen} />
         <Stack.Screen
           name="TransactionsList"

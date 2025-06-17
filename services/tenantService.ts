@@ -158,6 +158,33 @@ const tenantService = {
     }
   },
 
+  // Activate a tenant
+  activateTenant: async (
+    buildingId: string,
+    roomId: string,
+    phone: string
+  ): Promise<void> => {
+    try {
+      const response = await api.put(
+        `/buildings/${buildingId}/rooms/${roomId}/tenant/${phone}/activate`,
+        {
+          status: TenantStatus.ACTIVE,
+        }
+      );
+
+      // The backend returns 200 OK with no body on success
+      // If we get here, the activation was successful
+      return;
+    } catch (error: any) {
+      // If the error has a response with a message, use that
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      console.error("Error in activateTenant:", error);
+      throw error;
+    }
+  },
+
   // Get the base URL for debugging
   getBaseUrl: () => {
     return api.getBaseUrl();
