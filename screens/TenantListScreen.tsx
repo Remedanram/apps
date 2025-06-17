@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -17,6 +17,7 @@ import { RootStackParamList } from "../types/navigation";
 import { Feather } from "@expo/vector-icons";
 import { useBuilding } from "../contexts/BuildingContext";
 import { Tenant } from "../types/tenant";
+import { useFocusEffect } from "@react-navigation/native";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "TenantList">;
@@ -28,18 +29,10 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const { selectedBuilding } = useBuilding();
 
-  useEffect(() => {
-    if (selectedBuilding?.id) {
-      fetchTenants();
-    } else {
-      Alert.alert("Error", "Please select a building first");
-      navigation.goBack();
-    }
-  }, [selectedBuilding]);
-
-  const fetchTenants = async () => {
+  const fetchTenants = useCallback(async () => {
     try {
       if (!selectedBuilding?.id) return;
+      setLoading(true);
       const tenantsList = await tenantService.getAllTenants(
         selectedBuilding.id
       );
@@ -50,7 +43,19 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedBuilding?.id]);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedBuilding?.id) {
+        fetchTenants();
+      } else {
+        Alert.alert("Error", "Please select a building first");
+        navigation.goBack();
+      }
+    }, [selectedBuilding?.id, fetchTenants])
+  );
 
   const handleEditTenant = (tenant: Tenant) => {
     navigation.navigate("EditTenant", { tenant });

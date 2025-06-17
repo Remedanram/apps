@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -18,6 +18,7 @@ import { RootStackParamList } from "../types/navigation";
 import api from "../services/api";
 import type { Room } from "../types/room";
 import { useBuilding } from "../contexts/BuildingContext";
+import { useFocusEffect } from "@react-navigation/native";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "RoomList">;
@@ -135,14 +136,26 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleDeleteRoom = async (roomName: string) => {
-    try {
-      if (!selectedBuilding?.id) return;
-      await roomService.deleteRoom(selectedBuilding.id, roomName);
-      loadRooms(); // Refresh the list
-      Alert.alert("Success", "Room deleted successfully");
-    } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to delete room");
-    }
+    Alert.alert("Delete Room", "Are you sure you want to delete this room?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            if (!selectedBuilding?.id) return;
+            await roomService.deleteRoom(selectedBuilding.id, roomName);
+            loadRooms(); // Refresh the list
+            Alert.alert("Success", "Room deleted successfully");
+          } catch (error: any) {
+            Alert.alert("Error", error.message || "Failed to delete room");
+          }
+        },
+      },
+    ]);
   };
 
   const filteredRooms = rooms.filter(
@@ -209,6 +222,18 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
     </Card>
+  );
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedBuilding?.id) {
+        loadRooms();
+      } else {
+        Alert.alert("Error", "Please select a building first");
+        navigation.goBack();
+      }
+    }, [selectedBuilding?.id, loadRooms])
   );
 
   if (loading && !refreshing) {
