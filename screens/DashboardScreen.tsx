@@ -19,12 +19,17 @@ import type { RoomStats } from "../types/room";
 import tenantService from "../services/tenantService";
 import transactionService from "../services/transactionService";
 import type { Transaction } from "../services/transactionService";
+import { useSelectedBuilding } from "../hooks/useSelectedBuilding";
+import AddBuildingModal from "../components/AddBuildingModal";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 
-type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, "Dashboard">;
-};
+type DashboardScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "Dashboard"
+>;
 
-const DashboardScreen: React.FC<Props> = ({ navigation }) => {
+const DashboardScreen: React.FC = () => {
+  const { selectedBuilding, loading: buildingLoading } = useSelectedBuilding();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData>({
@@ -43,6 +48,9 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     },
     recentTransactions: [],
   });
+  const [isAddBuildingModalVisible, setIsAddBuildingModalVisible] =
+    useState(false);
+  const navigation = useNavigation<DashboardScreenNavigationProp>();
 
   const loadDashboardData = async () => {
     try {
@@ -85,10 +93,10 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     loadDashboardData();
   }, []);
 
-  const onRefresh = async () => {
+  const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    await loadDashboardData();
-  };
+    loadDashboardData();
+  }, []);
 
   const navigateToScreen = (screen: keyof RootStackParamList) => {
     switch (screen) {
@@ -110,154 +118,207 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleBuildingPress = () => {
+    // @ts-ignore - BuildingSelection is a valid route in the root stack
+    navigation.navigate("BuildingSelection");
+  };
+
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      {/* Header */}
+    <View style={styles.container}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.buildingName}>Remedan Building</Text>
-          <Text style={styles.subtitle}>Dashboard Overview</Text>
-        </View>
-        <TouchableOpacity style={styles.notificationButton}>
-          <View style={styles.notificationBadge}>
-            <Text style={styles.notificationCount}>2</Text>
-          </View>
-          <Feather name="bell" size={24} color={theme.colors.text.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.actionButtons}>
         <TouchableOpacity
-          style={[
-            styles.actionButton,
-            { backgroundColor: theme.colors.success + "20" },
-          ]}
-          onPress={() => navigateToScreen("AddRoom")}
+          onPress={handleBuildingPress}
+          style={styles.buildingSelector}
         >
-          <Feather name="plus-square" size={24} color={theme.colors.success} />
-          <Text style={styles.actionButtonText}>Add Room</Text>
+          <Text style={styles.buildingName}>
+            {buildingLoading
+              ? "Loading..."
+              : selectedBuilding?.name || "Select Building"}
+          </Text>
+          <Feather
+            name="chevron-down"
+            size={20}
+            color={theme.colors.text.primary}
+          />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            { backgroundColor: theme.colors.info + "20" },
-          ]}
-          onPress={() => navigateToScreen("AddTenant")}
-        >
-          <Feather name="user-plus" size={24} color={theme.colors.info} />
-          <Text style={styles.actionButtonText}>Add Tenant</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Stats Grid */}
-      <View style={styles.statsGrid}>
-        <TouchableOpacity
-          style={styles.statsButton}
-          onPress={() => navigateToScreen("RoomList")}
-        >
-          <Card style={styles.statsCard}>
-            <Feather name="home" size={24} color={theme.colors.primary} />
-            <Text style={styles.statsValue}>
-              {dashboardData.quickStats.totalRooms}
-            </Text>
-            <Text style={styles.statsLabel}>Total Rooms</Text>
-          </Card>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.statsButton}
-          onPress={() => navigateToScreen("TenantList")}
-        >
-          <Card style={styles.statsCard}>
-            <Feather name="users" size={24} color={theme.colors.secondary} />
-            <Text style={styles.statsValue}>
-              {dashboardData.quickStats.totalTenants}
-            </Text>
-            <Text style={styles.statsLabel}>Total Tenants</Text>
-          </Card>
-        </TouchableOpacity>
-      </View>
-
-      {/* Occupancy Card */}
-      <Card style={styles.occupancyCard}>
-        <Text style={styles.cardTitle}>Occupancy Rate</Text>
-        <Text style={styles.occupancyRate}>
-          {dashboardData.occupancyRate.toFixed(1)}%
-        </Text>
-        <View style={styles.roomStatusContainer}>
-          <View style={styles.roomStatusItem}>
-            <Text style={styles.roomStatusValue}>
-              {dashboardData.roomStatus.occupied}
-            </Text>
-            <Text style={styles.roomStatusLabel}>Occupied</Text>
-          </View>
-          <View style={styles.roomStatusItem}>
-            <Text style={styles.roomStatusValue}>
-              {dashboardData.roomStatus.vacant}
-            </Text>
-            <Text style={styles.roomStatusLabel}>Vacant</Text>
-          </View>
-          <View style={styles.roomStatusItem}>
-            <Text style={styles.roomStatusValue}>
-              {dashboardData.roomStatus.maintenance}
-            </Text>
-            <Text style={styles.roomStatusLabel}>Maintenance</Text>
-          </View>
-        </View>
-      </Card>
-
-      {/* Recent Transactions */}
-      <Card style={styles.transactionsCard}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Recent Transactions</Text>
+        <View style={styles.headerRight}>
           <TouchableOpacity
-            onPress={() => navigateToScreen("TransactionsList")}
-            style={styles.viewMoreButton}
+            style={styles.addButton}
+            onPress={() => setIsAddBuildingModalVisible(true)}
           >
-            <Text style={styles.viewMoreText}>View More</Text>
-            <Feather
-              name="chevron-right"
-              size={20}
-              color={theme.colors.primary}
-            />
+            <Feather name="plus" size={20} color={theme.colors.primary} />
+            <Text style={styles.addButtonText}>Add Building</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.notificationButton}>
+            <Feather name="bell" size={24} color={theme.colors.text.primary} />
           </TouchableOpacity>
         </View>
-        {dashboardData.recentTransactions?.map((transaction) => (
-          <View key={transaction.id} style={styles.transactionItem}>
-            <View>
-              <Text style={styles.transactionName}>
-                {transaction.senderName}
-              </Text>
-              <Text style={styles.transactionPhone}>
-                {transaction.senderPhone}
-              </Text>
-              <Text style={styles.transactionDescription}>
-                {transaction.description}
-              </Text>
+      </View>
+
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.buildingName}>
+              {selectedBuilding?.name || "Loading..."}
+            </Text>
+            <Text style={styles.subtitle}>Dashboard Overview</Text>
+          </View>
+          <TouchableOpacity style={styles.notificationButton}>
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationCount}>2</Text>
             </View>
-            <View>
-              <Text
-                style={[
-                  styles.transactionAmount,
-                  { color: theme.colors.success },
-                ]}
-              >
-                +${transaction.amount.toFixed(2)}
+            <Feather name="bell" size={24} color={theme.colors.text.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              { backgroundColor: theme.colors.success + "20" },
+            ]}
+            onPress={() => navigateToScreen("AddRoom")}
+          >
+            <Feather
+              name="plus-square"
+              size={24}
+              color={theme.colors.success}
+            />
+            <Text style={styles.actionButtonText}>Add Room</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              { backgroundColor: theme.colors.info + "20" },
+            ]}
+            onPress={() => navigateToScreen("AddTenant")}
+          >
+            <Feather name="user-plus" size={24} color={theme.colors.info} />
+            <Text style={styles.actionButtonText}>Add Tenant</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Stats Grid */}
+        <View style={styles.statsGrid}>
+          <TouchableOpacity
+            style={styles.statsButton}
+            onPress={() => navigateToScreen("RoomList")}
+          >
+            <Card style={styles.statsCard}>
+              <Feather name="home" size={24} color={theme.colors.primary} />
+              <Text style={styles.statsValue}>
+                {dashboardData.quickStats.totalRooms}
               </Text>
-              <Text style={styles.transactionDate}>
-                {new Date(transaction.txnDate).toLocaleDateString()}
+              <Text style={styles.statsLabel}>Total Rooms</Text>
+            </Card>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.statsButton}
+            onPress={() => navigateToScreen("TenantList")}
+          >
+            <Card style={styles.statsCard}>
+              <Feather name="users" size={24} color={theme.colors.secondary} />
+              <Text style={styles.statsValue}>
+                {dashboardData.quickStats.totalTenants}
               </Text>
+              <Text style={styles.statsLabel}>Total Tenants</Text>
+            </Card>
+          </TouchableOpacity>
+        </View>
+
+        {/* Occupancy Card */}
+        <Card style={styles.occupancyCard}>
+          <Text style={styles.cardTitle}>Occupancy Rate</Text>
+          <Text style={styles.occupancyRate}>
+            {dashboardData.occupancyRate.toFixed(1)}%
+          </Text>
+          <View style={styles.roomStatusContainer}>
+            <View style={styles.roomStatusItem}>
+              <Text style={styles.roomStatusValue}>
+                {dashboardData.roomStatus.occupied}
+              </Text>
+              <Text style={styles.roomStatusLabel}>Occupied</Text>
+            </View>
+            <View style={styles.roomStatusItem}>
+              <Text style={styles.roomStatusValue}>
+                {dashboardData.roomStatus.vacant}
+              </Text>
+              <Text style={styles.roomStatusLabel}>Vacant</Text>
+            </View>
+            <View style={styles.roomStatusItem}>
+              <Text style={styles.roomStatusValue}>
+                {dashboardData.roomStatus.maintenance}
+              </Text>
+              <Text style={styles.roomStatusLabel}>Maintenance</Text>
             </View>
           </View>
-        ))}
-      </Card>
-    </ScrollView>
+        </Card>
+
+        {/* Recent Transactions */}
+        <Card style={styles.transactionsCard}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Recent Transactions</Text>
+            <TouchableOpacity
+              onPress={() => navigateToScreen("TransactionsList")}
+              style={styles.viewMoreButton}
+            >
+              <Text style={styles.viewMoreText}>View More</Text>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+          </View>
+          {dashboardData.recentTransactions?.map((transaction) => (
+            <View key={transaction.id} style={styles.transactionItem}>
+              <View>
+                <Text style={styles.transactionName}>
+                  {transaction.senderName}
+                </Text>
+                <Text style={styles.transactionPhone}>
+                  {transaction.senderPhone}
+                </Text>
+                <Text style={styles.transactionDescription}>
+                  {transaction.description}
+                </Text>
+              </View>
+              <View>
+                <Text
+                  style={[
+                    styles.transactionAmount,
+                    { color: theme.colors.success },
+                  ]}
+                >
+                  +${transaction.amount.toFixed(2)}
+                </Text>
+                <Text style={styles.transactionDate}>
+                  {new Date(transaction.txnDate).toLocaleDateString()}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </Card>
+      </ScrollView>
+
+      <AddBuildingModal
+        visible={isAddBuildingModalVisible}
+        onClose={() => setIsAddBuildingModalVisible(false)}
+        onBuildingAdded={() => {
+          // Refresh the building list or handle the new building
+          // @ts-ignore - BuildingSelection is a valid route in the root stack
+          navigation.navigate("BuildingSelection");
+        }}
+      />
+    </View>
   );
 };
 
@@ -270,22 +331,44 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: theme.spacing.md,
-    paddingTop: theme.spacing.lg,
+    padding: theme.spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
+  },
+  buildingSelector: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   buildingName: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: "700",
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: "600",
     color: theme.colors.text.primary,
+    marginRight: theme.spacing.xs,
   },
-  subtitle: {
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.colors.card,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+    marginRight: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  addButtonText: {
+    color: theme.colors.primary,
     fontSize: theme.typography.sizes.sm,
-    color: theme.colors.text.secondary,
-    marginTop: theme.spacing.xs,
+    fontWeight: "600",
+    marginLeft: theme.spacing.xs,
   },
   notificationButton: {
     padding: theme.spacing.sm,
-    position: "relative",
   },
   notificationBadge: {
     position: "absolute",
@@ -303,6 +386,14 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: theme.typography.sizes.xs,
     fontWeight: "700",
+  },
+  content: {
+    flex: 1,
+  },
+  subtitle: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
   },
   actionButtons: {
     flexDirection: "row",
