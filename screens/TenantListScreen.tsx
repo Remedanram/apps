@@ -6,14 +6,17 @@ import {
   Alert,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { Text } from "react-native";
 import { Card } from "../components";
 import theme from "../constants/theme";
-import tenantService, { Tenant } from "../services/tenantService";
+import tenantService from "../services/tenantService";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
 import { Feather } from "@expo/vector-icons";
+import { useBuilding } from "../contexts/BuildingContext";
+import { Tenant } from "../types/tenant";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "TenantList">;
@@ -23,17 +26,25 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const { selectedBuilding } = useBuilding();
 
   useEffect(() => {
-    fetchTenants();
-  }, []);
+    if (selectedBuilding?.id) {
+      fetchTenants();
+    } else {
+      Alert.alert("Error", "Please select a building first");
+      navigation.goBack();
+    }
+  }, [selectedBuilding]);
 
   const fetchTenants = async () => {
     try {
-      const response = await tenantService.getAllTenants();
-      console.log("Fetched tenants:", response);
-      setTenants(response);
-    } catch (error) {
+      if (!selectedBuilding?.id) return;
+      const tenantsList = await tenantService.getAllTenants(
+        selectedBuilding.id
+      );
+      setTenants(tenantsList);
+    } catch (error: any) {
       console.error("Error fetching tenants:", error);
       Alert.alert("Error", "Failed to load tenants. Please try again.");
     } finally {
@@ -45,10 +56,10 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("EditTenant", { tenant });
   };
 
-  const handleDeleteTenant = async (tenant: Tenant) => {
+  const handleDeleteTenant = async (roomName: string, phone: string) => {
     Alert.alert(
       "Delete Tenant",
-      `Are you sure you want to delete tenant ${tenant.name}?`,
+      "Are you sure you want to delete this tenant?",
       [
         {
           text: "Cancel",
@@ -59,14 +70,16 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
           style: "destructive",
           onPress: async () => {
             try {
+              if (!selectedBuilding?.id) return;
               await tenantService.deleteTenant(
-                tenant.room.roomName,
-                tenant.phone
+                selectedBuilding.id,
+                roomName,
+                phone
               );
-              fetchTenants(); // Reload the tenant list
-            } catch (error) {
-              console.error("Error deleting tenant:", error);
-              Alert.alert("Error", "Failed to delete tenant");
+              fetchTenants(); // Refresh the list
+              Alert.alert("Success", "Tenant deleted successfully");
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to delete tenant");
             }
           },
         },
@@ -103,15 +116,37 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderTenantItem = ({ item }: { item: Tenant }) => (
     <Card style={styles.tenantCard}>
-      <Text style={styles.tenantName}>{item.name}</Text>
+      <View style={styles.tenantHeader}>
+        <Text style={styles.tenantName}>{item.name}</Text>
+        <View style={styles.tenantActions}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => handleEditTenant(item)}
+          >
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() =>
+              handleDeleteTenant(item.room?.roomName || "", item.phone)
+            }
+          >
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
       <Text style={styles.tenantDetails}>Phone: {item.phone}</Text>
       {item.email && (
         <Text style={styles.tenantDetails}>Email: {item.email}</Text>
       )}
-      <Text style={styles.tenantDetails}>Room: {item.room.roomName}</Text>
-      <Text style={styles.tenantDetails}>Rent: ${item.room.rentAmount}</Text>
       <Text style={styles.tenantDetails}>
-        Room Description: {item.room.description || ""}
+        Room: {item.room?.roomName || "No room assigned"}
+      </Text>
+      <Text style={styles.tenantDetails}>
+        Rent: ${item.room?.rentAmount || "N/A"}
+      </Text>
+      <Text style={styles.tenantDetails}>
+        Room Description: {item.room?.description || ""}
       </Text>
       <Text style={styles.tenantDetails}>
         Tenant Description: {item.description || ""}
@@ -146,7 +181,9 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => handleDeleteTenant(item)}
+          onPress={() =>
+            handleDeleteTenant(item.room?.roomName || "", item.phone)
+          }
         >
           <Feather name="trash-2" size={20} color={theme.colors.error} />
           <Text
@@ -168,6 +205,14 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
         tenant.email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
@@ -180,21 +225,19 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
         />
       </View>
 
-      {loading ? (
-        <Text style={styles.loadingText}>Loading tenants...</Text>
-      ) : (
-        <FlatList
-          data={filteredTenants}
-          renderItem={renderTenantItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No tenants found</Text>
-            </View>
-          }
-        />
-      )}
+      <FlatList
+        data={filteredTenants}
+        renderItem={renderTenantItem}
+        keyExtractor={(item) =>
+          `${item.room?.roomName || "no-room"}-${item.phone}`
+        }
+        contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No tenants found</Text>
+          </View>
+        }
+      />
     </View>
   );
 };
@@ -225,21 +268,52 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     padding: theme.spacing.md,
   },
+  tenantHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: theme.spacing.sm,
+  },
   tenantName: {
     fontSize: theme.typography.sizes.lg,
     fontWeight: "bold",
     marginBottom: theme.spacing.xs,
+  },
+  tenantActions: {
+    flexDirection: "row",
+  },
+  editButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.sm,
+    marginRight: theme.spacing.sm,
+  },
+  editButtonText: {
+    color: theme.colors.card,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: "500",
+  },
+  deleteButton: {
+    backgroundColor: theme.colors.error,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.sm,
+  },
+  deleteButtonText: {
+    color: theme.colors.card,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: "500",
   },
   tenantDetails: {
     fontSize: theme.typography.sizes.md,
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.xs,
   },
-  loadingText: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.text.secondary,
-    textAlign: "center",
-    marginTop: theme.spacing.xl,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyContainer: {
     padding: theme.spacing.lg,
@@ -268,14 +342,8 @@ const styles = StyleSheet.create({
     minWidth: 80,
     justifyContent: "center",
   },
-  editButton: {
-    backgroundColor: theme.colors.primary + "20",
-  },
   deactivateButton: {
     backgroundColor: theme.colors.warning + "20",
-  },
-  deleteButton: {
-    backgroundColor: theme.colors.error + "20",
   },
   actionButtonText: {
     fontSize: theme.typography.sizes.sm,
