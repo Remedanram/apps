@@ -71,7 +71,7 @@ const tenantService = {
   // Update a tenant in a specific building
   updateTenant: async (
     buildingId: string,
-    roomName: string,
+    roomId: string,
     tenantData: Partial<Tenant>
   ): Promise<Tenant> => {
     try {
@@ -84,7 +84,6 @@ const tenantService = {
         moveOutDate: tenantData.moveOutDate
           ? new Date(tenantData.moveOutDate).toISOString().split("T")[0]
           : "",
-        roomName: roomName,
         phone: tenantData.phone || "",
         email: tenantData.email || "",
         status: tenantData.status || TenantStatus.ACTIVE,
@@ -92,7 +91,7 @@ const tenantService = {
       };
 
       const response = await api.put(
-        `/buildings/${buildingId}/tenants/${roomName}`,
+        `/buildings/${buildingId}/rooms/${roomId}/tenant`,
         updateData
       );
       console.log("updateTenant response:", response);
@@ -109,11 +108,13 @@ const tenantService = {
   // Delete a tenant from a specific building
   deleteTenant: async (
     buildingId: string,
-    roomName: string,
+    roomId: string,
     phone: string
   ): Promise<void> => {
     try {
-      await api.delete(`/buildings/${buildingId}/tenants/${roomName}/${phone}`);
+      await api.delete(
+        `/buildings/${buildingId}/rooms/${roomId}/tenant/${phone}`
+      );
       // If we get here, the deletion was successful
       return;
     } catch (error: any) {
@@ -131,11 +132,18 @@ const tenantService = {
   },
 
   // Deactivate a tenant
-  deactivateTenant: async (roomName: string): Promise<void> => {
+  deactivateTenant: async (
+    buildingId: string,
+    roomId: string,
+    phone: string
+  ): Promise<void> => {
     try {
-      const response = await api.put(`/tenants/${roomName}/deactivate`, {
-        status: TenantStatus.INACTIVE,
-      });
+      const response = await api.put(
+        `/buildings/${buildingId}/rooms/${roomId}/tenant/${phone}/deactivate`,
+        {
+          status: TenantStatus.INACTIVE,
+        }
+      );
 
       // The backend returns 200 OK with no body on success
       // If we get here, the deactivation was successful

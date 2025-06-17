@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
 import api from "../services/api";
 import type { Room } from "../types/room";
+import { useBuilding } from "../contexts/BuildingContext";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "RoomList">;
@@ -29,11 +30,13 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const { selectedBuilding } = useBuilding();
 
   const loadRooms = async () => {
     try {
       setError(null);
-      const response = await roomService.getAllRooms();
+      if (!selectedBuilding?.id) return;
+      const response = await roomService.getAllRooms(selectedBuilding.id);
       console.log("API Response:", response);
       setRooms(Array.isArray(response) ? response : []);
       setRetryCount(0); // Reset retry count on success
@@ -114,8 +117,13 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    loadRooms();
-  }, []);
+    if (selectedBuilding?.id) {
+      loadRooms();
+    } else {
+      Alert.alert("Error", "Please select a building first");
+      navigation.goBack();
+    }
+  }, [selectedBuilding]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -126,31 +134,15 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("EditRoom", { room });
   };
 
-  const handleDeleteRoom = async (room: Room) => {
-    Alert.alert(
-      "Delete Room",
-      `Are you sure you want to delete room ${room.roomName}?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const message = await roomService.deleteRoom(room.roomName);
-              Alert.alert("Success", message);
-              loadRooms(); // Reload the room list
-            } catch (error) {
-              console.error("Error deleting room:", error);
-              Alert.alert("Error", "Failed to delete room");
-            }
-          },
-        },
-      ]
-    );
+  const handleDeleteRoom = async (roomName: string) => {
+    try {
+      if (!selectedBuilding?.id) return;
+      await roomService.deleteRoom(selectedBuilding.id, roomName);
+      loadRooms(); // Refresh the list
+      Alert.alert("Success", "Room deleted successfully");
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to delete room");
+    }
   };
 
   const filteredRooms = rooms.filter(
@@ -206,7 +198,7 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => handleDeleteRoom(item)}
+          onPress={() => handleDeleteRoom(item.roomName)}
         >
           <Feather name="trash-2" size={20} color={theme.colors.error} />
           <Text

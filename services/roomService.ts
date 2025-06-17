@@ -138,6 +138,7 @@ const roomService = {
 
   // Update a room
   updateRoom: async (
+    buildingId: string,
     roomName: string,
     roomData: Partial<Room>
   ): Promise<Room> => {
@@ -149,7 +150,10 @@ const roomService = {
         active: roomData.active,
       };
 
-      const response = await api.put(`/rooms/${roomName}`, updateData);
+      const response = await api.put(
+        `/buildings/${buildingId}/rooms/${roomName}`,
+        updateData
+      );
       console.log("updateRoom response:", response);
       if (response?.data) {
         return response.data;
@@ -162,9 +166,9 @@ const roomService = {
   },
 
   // Delete a room
-  deleteRoom: async (roomName: string): Promise<string> => {
+  deleteRoom: async (buildingId: string, roomName: string): Promise<string> => {
     try {
-      await api.delete(`/rooms/${roomName}`);
+      await api.delete(`/buildings/${buildingId}/rooms/${roomName}`);
       // If we get here, the deletion was successful (204 NO_CONTENT)
       return "Room deleted successfully";
     } catch (error: any) {
