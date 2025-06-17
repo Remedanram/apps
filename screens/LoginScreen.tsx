@@ -8,50 +8,61 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import theme from "../constants/theme";
+import authService from "../services/authService";
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  const [username, setUsername] = useState("");
+  const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!username || !password) {
-      Alert.alert("Error", "Please fill in all fields");
-      return;
+  const handleAuth = async () => {
+    if (isLogin) {
+      if (!email || !password) {
+        Alert.alert("Error", "Please fill in all fields");
+        return;
+      }
+    } else {
+      if (!name || !email || !password) {
+        Alert.alert("Error", "Please fill in all fields");
+        return;
+      }
     }
 
     setLoading(true);
     try {
-      // Test account for development
-      if (username === "admin" && password === "admin123") {
-        await AsyncStorage.setItem("userToken", "test-token");
-        await AsyncStorage.setItem(
-          "userData",
-          JSON.stringify({
-            id: 1,
-            username: "admin",
-            role: "admin",
-          })
-        );
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "Main" as never }],
-        });
-        return;
+      let response;
+      if (isLogin) {
+        response = await authService.login({ email, password });
+      } else {
+        response = await authService.signup({ name, email, password });
       }
 
-      // Your actual API call code here
-      Alert.alert("Error", "Invalid credentials");
-    } catch (error) {
-      console.error("Login error:", error);
-      Alert.alert("Error", "Connection failed. Please try again.");
+      // Store auth data
+      await AsyncStorage.setItem("userToken", response.token);
+      await AsyncStorage.setItem("userData", JSON.stringify(response.user));
+
+      // Navigate to main screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Main" as never }],
+      });
+    } catch (error: any) {
+      console.error("Auth error:", error);
+      Alert.alert(
+        "Error",
+        error.response?.data?.message ||
+          "Authentication failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -62,59 +73,105 @@ const LoginScreen = () => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <View style={styles.formContainer}>
-        <View style={styles.header}>
-          <Feather name="home" size={40} color={theme.colors.primary} />
-          <Text style={styles.title}>Rent Controller</Text>
-          <Text style={styles.subtitle}>Login to manage your properties</Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.formContainer}>
+          <View style={styles.header}>
+            <Feather name="home" size={40} color={theme.colors.primary} />
+            <Text style={styles.title}>Rent Controller</Text>
+            <Text style={styles.subtitle}>
+              {isLogin
+                ? "Login to manage your properties"
+                : "Create your account"}
+            </Text>
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Feather name="user" size={20} color={theme.colors.text.secondary} />
-          <TextInput
-            style={styles.input}
-            placeholder="Username"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
+          {!isLogin && (
+            <View style={styles.inputContainer}>
+              <Feather
+                name="user"
+                size={20}
+                color={theme.colors.text.secondary}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Full Name"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
+            </View>
+          )}
 
-        <View style={styles.inputContainer}>
-          <Feather name="lock" size={20} color={theme.colors.text.secondary} />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            autoCapitalize="none"
-          />
-          <TouchableOpacity
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.eyeIcon}
-          >
+          <View style={styles.inputContainer}>
             <Feather
-              name={showPassword ? "eye-off" : "eye"}
+              name="mail"
               size={20}
               color={theme.colors.text.secondary}
             />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Feather
+              name="lock"
+              size={20}
+              color={theme.colors.text.secondary}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              <Feather
+                name={showPassword ? "eye-off" : "eye"}
+                size={20}
+                color={theme.colors.text.secondary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleAuth}
+            disabled={loading}
+          >
+            {loading ? (
+              <Text style={styles.buttonText}>Processing...</Text>
+            ) : (
+              <Text style={styles.buttonText}>
+                {isLogin ? "Login" : "Sign Up"}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.switchButton}
+            onPress={() => setIsLogin(!isLogin)}
+          >
+            <Text style={styles.switchButtonText}>
+              {isLogin
+                ? "Don't have an account? Sign Up"
+                : "Already have an account? Login"}
+            </Text>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <Text style={styles.buttonText}>Logging in...</Text>
-          ) : (
-            <Text style={styles.buttonText}>Login</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -123,6 +180,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  scrollContainer: {
+    flexGrow: 1,
   },
   formContainer: {
     flex: 1,
@@ -178,6 +238,14 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: theme.typography.sizes.md,
     fontWeight: "600",
+  },
+  switchButton: {
+    marginTop: theme.spacing.md,
+    alignItems: "center",
+  },
+  switchButtonText: {
+    color: theme.colors.primary,
+    fontSize: theme.typography.sizes.md,
   },
 });
 
