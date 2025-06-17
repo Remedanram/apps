@@ -25,6 +25,6 @@ export interface CreateTenantRequest {
   name: string;
   phone: string;
   email: string;
-  roomName: string;
   description: string;
+  moveInDate?: string;
 }

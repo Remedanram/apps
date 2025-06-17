@@ -14,31 +14,40 @@ import { Picker } from "@react-native-picker/picker";
 import tenantService from "../services/tenantService";
 import roomService from "../services/roomService";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { RootStackParamList } from "../types/navigation";
 import { Room } from "../types/room";
+import { useBuilding } from "../contexts/BuildingContext";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "AddTenant">;
 };
 
 const AddTenantScreen = ({ navigation }: Props) => {
+  const { selectedBuilding } = useBuilding();
   const [tenantData, setTenantData] = useState({
     name: "",
     phone: "",
     email: "",
-    roomName: "",
     description: "",
+    moveInDate: new Date().toISOString().split("T")[0],
   });
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchRooms();
-  }, []);
+    if (selectedBuilding?.id) {
+      fetchRooms();
+    } else {
+      setRooms([]);
+      setLoading(false);
+    }
+  }, [selectedBuilding]);
 
   const fetchRooms = async () => {
     try {
-      const roomsList = await roomService.getAllRooms();
+      if (!selectedBuilding?.id) return;
+      const roomsList = await roomService.getAllRooms(selectedBuilding.id);
       // Filter only vacant and active rooms
       const vacantRooms = roomsList.filter(
         (room) => !room.occupied && room.active
@@ -53,8 +62,16 @@ const AddTenantScreen = ({ navigation }: Props) => {
   };
 
   const handleSubmit = async () => {
-    if (!tenantData.name || !tenantData.phone || !tenantData.roomName) {
-      Alert.alert("Error", "Please fill in all required fields");
+    if (
+      !tenantData.name ||
+      !tenantData.phone ||
+      !selectedRoomId ||
+      !selectedBuilding?.id
+    ) {
+      Alert.alert(
+        "Error",
+        "Please fill in all required fields and select a room"
+      );
       return;
     }
 
@@ -66,7 +83,11 @@ const AddTenantScreen = ({ navigation }: Props) => {
     }
 
     try {
-      await tenantService.createTenant(tenantData);
+      await tenantService.createTenant(
+        selectedBuilding.id,
+        selectedRoomId,
+        tenantData
+      );
       Alert.alert("Success", "Tenant added successfully", [
         {
           text: "OK",
@@ -81,22 +102,39 @@ const AddTenantScreen = ({ navigation }: Props) => {
   return (
     <ScrollView style={styles.container}>
       <Card style={styles.formCard}>
-        <Text style={styles.title}>Add New Tenant</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Room *</Text>
+          <Picker
+            selectedValue={selectedRoomId}
+            onValueChange={(value) => setSelectedRoomId(value)}
+            style={styles.picker}
+          >
+            <Picker.Item label="Select a room" value="" />
+            {rooms.map((room) => (
+              <Picker.Item
+                key={room.id}
+                label={`${room.roomName} - $${room.rentAmount}`}
+                value={room.id?.toString()}
+              />
+            ))}
+          </Picker>
+        </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Full Name *</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Name *</Text>
           <TextInput
             style={styles.input}
             value={tenantData.name}
             onChangeText={(text) =>
               setTenantData({ ...tenantData, name: text })
             }
-            placeholder="Enter tenant's full name"
+            placeholder="Enter tenant name"
+            placeholderTextColor={theme.colors.text.secondary}
           />
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Phone Number *</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Phone *</Text>
           <TextInput
             style={styles.input}
             value={tenantData.phone}
@@ -104,11 +142,12 @@ const AddTenantScreen = ({ navigation }: Props) => {
               setTenantData({ ...tenantData, phone: text })
             }
             placeholder="Enter phone number"
+            placeholderTextColor={theme.colors.text.secondary}
             keyboardType="phone-pad"
           />
         </View>
 
-        <View style={styles.inputContainer}>
+        <View style={styles.inputGroup}>
           <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
@@ -117,61 +156,43 @@ const AddTenantScreen = ({ navigation }: Props) => {
               setTenantData({ ...tenantData, email: text })
             }
             placeholder="Enter email address"
+            placeholderTextColor={theme.colors.text.secondary}
             keyboardType="email-address"
             autoCapitalize="none"
           />
         </View>
 
-        <View style={styles.inputContainer}>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Move-in Date</Text>
+          <TextInput
+            style={styles.input}
+            value={tenantData.moveInDate}
+            onChangeText={(text) =>
+              setTenantData({ ...tenantData, moveInDate: text })
+            }
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={theme.colors.text.secondary}
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
           <Text style={styles.label}>Description</Text>
           <TextInput
-            style={[styles.input, { height: 100, textAlignVertical: "top" }]}
+            style={[styles.input, styles.textArea]}
             value={tenantData.description}
             onChangeText={(text) =>
               setTenantData({ ...tenantData, description: text })
             }
             placeholder="Enter tenant description"
+            placeholderTextColor={theme.colors.text.secondary}
             multiline
             numberOfLines={4}
+            textAlignVertical="top"
           />
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Select Room *</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={tenantData.roomName}
-              onValueChange={(itemValue) =>
-                setTenantData({ ...tenantData, roomName: itemValue })
-              }
-              enabled={!loading}
-            >
-              <Picker.Item label="Select a vacant room" value="" />
-              {rooms.map((room) => (
-                <Picker.Item
-                  key={room.roomName}
-                  label={`${room.roomName} - $${room.rentAmount}`}
-                  value={room.roomName}
-                />
-              ))}
-            </Picker>
-          </View>
-          {rooms.length === 0 && !loading && (
-            <Text style={styles.noRoomsText}>No vacant rooms available</Text>
-          )}
-        </View>
-
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            (loading || rooms.length === 0) && styles.disabledButton,
-          ]}
-          onPress={handleSubmit}
-          disabled={loading || rooms.length === 0}
-        >
-          <Text style={styles.submitButtonText}>
-            {loading ? "Loading Rooms..." : "Add Tenant"}
-          </Text>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <Text style={styles.submitButtonText}>Add Tenant</Text>
         </TouchableOpacity>
       </Card>
     </ScrollView>
@@ -182,23 +203,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    padding: theme.spacing.md,
   },
   formCard: {
-    padding: theme.spacing.lg,
+    margin: theme.spacing.md,
+    padding: theme.spacing.md,
   },
-  title: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: "bold",
-    marginBottom: theme.spacing.lg,
-  },
-  inputContainer: {
+  inputGroup: {
     marginBottom: theme.spacing.md,
   },
   label: {
     fontSize: theme.typography.sizes.md,
-    color: theme.colors.text.secondary,
+    color: theme.colors.text.primary,
     marginBottom: theme.spacing.xs,
+    fontWeight: "500",
   },
   input: {
     backgroundColor: theme.colors.background,
@@ -208,11 +225,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  pickerContainer: {
+  picker: {
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
     borderColor: theme.colors.border,
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: "top",
   },
   submitButton: {
     backgroundColor: theme.colors.primary,
@@ -221,20 +242,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: theme.spacing.md,
   },
-  disabledButton: {
-    backgroundColor: theme.colors.text.secondary,
-    opacity: 0.7,
-  },
   submitButtonText: {
     color: theme.colors.card,
     fontSize: theme.typography.sizes.md,
-    fontWeight: "500",
-  },
-  noRoomsText: {
-    color: theme.colors.error,
-    fontSize: theme.typography.sizes.sm,
-    marginTop: theme.spacing.xs,
-    fontStyle: "italic",
+    fontWeight: "600",
   },
 });
 

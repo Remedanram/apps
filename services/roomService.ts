@@ -85,7 +85,7 @@ const roomService = {
     }
   },
 
-  // Create a new room in a specific building
+  // Create a new room in a building
   createRoom: async (
     buildingId: string,
     roomData: CreateRoomRequest
@@ -95,26 +95,14 @@ const roomService = {
         `/buildings/${buildingId}/rooms`,
         roomData
       );
+      console.log("createRoom response:", response);
       if (response?.data) {
         return response.data;
       }
       throw new Error("Failed to create room");
-    } catch (error: any) {
-      // Get the error message from the response
-      const errorMessage =
-        error.response?.data?.message ||
-        "Failed to create room. Please try again.";
-
-      // Check if it's a duplicate room error
-      if (errorMessage.toLowerCase().includes("already exists")) {
-        const roomName = errorMessage.match(/'([^']+)'/)?.[1] || "this name";
-        throw new Error(
-          `${roomName} already exists. Please choose a different room name.`
-        );
-      }
-
-      // For any other error, throw with the original message
-      throw new Error(errorMessage);
+    } catch (error) {
+      console.error("Error in createRoom:", error);
+      throw error;
     }
   },
 

@@ -21,6 +21,7 @@ import type { Transaction } from "../services/transactionService";
 import { useSelectedBuilding } from "../hooks/useSelectedBuilding";
 import AddBuildingModal from "../components/AddBuildingModal";
 import { useNavigation } from "@react-navigation/native";
+import { useBuilding } from "../contexts/BuildingContext";
 
 type DashboardScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -50,6 +51,7 @@ const DashboardScreen: React.FC = () => {
   const [isAddBuildingModalVisible, setIsAddBuildingModalVisible] =
     useState(false);
   const navigation = useNavigation<DashboardScreenNavigationProp>();
+  const { setSelectedBuilding } = useBuilding();
 
   const loadDashboardData = async () => {
     if (!selectedBuilding?.id) {

@@ -9,21 +9,29 @@ import {
   Platform,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import theme from "../constants/theme";
 import authService from "../services/authService";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../types/navigation";
+import { useBuilding } from "../contexts/BuildingContext";
 
-const LoginScreen = () => {
-  const navigation = useNavigation();
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "Auth">;
+};
+
+const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { selectedBuilding } = useBuilding();
 
   const handleAuth = async () => {
     if (isLogin) {
@@ -60,11 +68,19 @@ const LoginScreen = () => {
           })
         );
 
-        // Navigate to building selection screen
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "BuildingSelection" as never }],
-        });
+        // If we already have a selected building, go directly to main screen
+        if (selectedBuilding) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "Main" }],
+          });
+        } else {
+          // Otherwise, go to building selection
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "BuildingSelection" }],
+          });
+        }
       } else {
         response = await authService.signup({ name, email, password });
         // After successful signup, switch to login mode
@@ -167,7 +183,7 @@ const LoginScreen = () => {
             disabled={loading}
           >
             {loading ? (
-              <Text style={styles.buttonText}>Processing...</Text>
+              <ActivityIndicator color={theme.colors.card} />
             ) : (
               <Text style={styles.buttonText}>
                 {isLogin ? "Login" : "Sign Up"}

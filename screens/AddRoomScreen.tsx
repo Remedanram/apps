@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -17,25 +17,35 @@ import type { CreateRoomRequest } from "../types/room";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
 import api from "../services/api";
+import { useBuilding } from "../contexts/BuildingContext";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "AddRoom">;
 };
 
 const AddRoomScreen: React.FC<Props> = ({ navigation }) => {
+  const { selectedBuilding } = useBuilding();
   const [loading, setLoading] = useState(false);
   const [roomData, setRoomData] = useState<CreateRoomRequest>({
     roomName: "",
     rentAmount: 0,
     description: "",
-    active: true,
-    occupied: false,
+    buildingId: selectedBuilding?.id || "",
   });
   const [rentAmountText, setRentAmountText] = useState("");
 
+  useEffect(() => {
+    if (selectedBuilding?.id) {
+      setRoomData((prev) => ({ ...prev, buildingId: selectedBuilding.id }));
+    }
+  }, [selectedBuilding]);
+
   const handleSubmit = async () => {
-    if (!roomData.roomName || !rentAmountText) {
-      Alert.alert("Error", "Please fill in all required fields");
+    if (!roomData.roomName || !rentAmountText || !roomData.buildingId) {
+      Alert.alert(
+        "Error",
+        "Please fill in all required fields and ensure a building is selected"
+      );
       return;
     }
 
@@ -46,7 +56,7 @@ const AddRoomScreen: React.FC<Props> = ({ navigation }) => {
         rentAmount: parseFloat(rentAmountText),
       };
 
-      await roomService.createRoom(dataToSubmit);
+      await roomService.createRoom(roomData.buildingId, dataToSubmit);
       Alert.alert("Success", "Room added successfully", [
         {
           text: "OK",

@@ -7,53 +7,52 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import theme from "../constants/theme";
 import buildingService, { Building } from "../services/buildingService";
+import { Card } from "../components";
+import { useBuilding } from "../contexts/BuildingContext";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../types/navigation";
+import api from "../services/api";
 
-const BuildingSelectionScreen = () => {
-  const navigation = useNavigation();
+type Props = {
+  navigation: NativeStackNavigationProp<
+    RootStackParamList,
+    "BuildingSelection"
+  >;
+};
+
+const BuildingSelectionScreen: React.FC<Props> = ({ navigation }) => {
+  const { setSelectedBuilding } = useBuilding();
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadBuildings();
+    fetchBuildings();
   }, []);
 
-  const loadBuildings = async () => {
+  const fetchBuildings = async () => {
     try {
-      const buildingsData = await buildingService.getAllBuildings();
-      setBuildings(buildingsData);
-
-      // If there's only one building, automatically select it
-      if (buildingsData.length === 1) {
-        await handleBuildingSelect(buildingsData[0]);
+      const response = await api.get("/buildings");
+      if (response?.data) {
+        setBuildings(response.data);
       }
     } catch (error) {
-      console.error("Error loading buildings:", error);
+      console.error("Error fetching buildings:", error);
       Alert.alert("Error", "Failed to load buildings. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBuildingSelect = async (building: Building) => {
-    try {
-      // Store the selected building
-      await AsyncStorage.setItem("selectedBuilding", JSON.stringify(building));
-
-      // Navigate to main screen
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Main" as never }],
-      });
-    } catch (error) {
-      console.error("Error selecting building:", error);
-      Alert.alert("Error", "Failed to select building. Please try again.");
-    }
+  const handleBuildingSelect = (building: Building) => {
+    setSelectedBuilding(building);
+    navigation.navigate("Main");
   };
 
   const renderBuildingItem = ({ item }: { item: Building }) => (
@@ -83,23 +82,24 @@ const BuildingSelectionScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Feather name="building" size={40} color={theme.colors.primary} />
-        <Text style={styles.title}>Select Building</Text>
-        <Text style={styles.subtitle}>Choose a building to manage</Text>
-      </View>
-
-      <FlatList
-        data={buildings}
-        renderItem={renderBuildingItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No buildings available</Text>
-        }
-      />
-    </View>
+    <ScrollView style={styles.container}>
+      <Card style={styles.card}>
+        <Text style={styles.title}>Select a Building</Text>
+        {buildings.length === 0 ? (
+          <Text style={styles.noBuildingsText}>No buildings available</Text>
+        ) : (
+          <FlatList
+            data={buildings}
+            renderItem={renderBuildingItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContainer}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No buildings available</Text>
+            }
+          />
+        )}
+      </Card>
+    </ScrollView>
   );
 };
 
@@ -119,22 +119,16 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.md,
     color: theme.colors.text.secondary,
   },
-  header: {
-    alignItems: "center",
-    padding: theme.spacing.xl,
-    backgroundColor: theme.colors.card,
-    ...theme.shadows.small,
+  card: {
+    margin: theme.spacing.md,
+    padding: theme.spacing.md,
   },
   title: {
-    fontSize: theme.typography.sizes.xxl,
-    fontWeight: "700",
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: "bold",
     color: theme.colors.text.primary,
-    marginTop: theme.spacing.md,
-  },
-  subtitle: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.text.secondary,
-    marginTop: theme.spacing.xs,
+    marginBottom: theme.spacing.lg,
+    textAlign: "center",
   },
   listContainer: {
     padding: theme.spacing.md,
@@ -167,6 +161,12 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.md,
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.xl,
+  },
+  noBuildingsText: {
+    textAlign: "center",
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.md,
+    fontStyle: "italic",
   },
 });
 

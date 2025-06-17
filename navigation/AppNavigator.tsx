@@ -39,51 +39,20 @@ export type RootStackParamList = {
   AddTenant: undefined;
   EditRoom: { room: Room };
   EditTenant: { tenant: Tenant };
-};
-
-export type MonthlyStackParamList = {
-  MonthlyHome: undefined;
-  PaidRooms: { period: string };
-  PendingRooms: { period: string };
-  MonthlyDetails: { period: string };
+  Dashboard: undefined;
+  PaidRooms: undefined;
+  PendingRooms: undefined;
+  MonthlyDetails: { month: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const MonthlyStack = createNativeStackNavigator<MonthlyStackParamList>();
 const Tab = createBottomTabNavigator();
-
-const MonthlyNavigator = () => {
-  return (
-    <MonthlyStack.Navigator>
-      <MonthlyStack.Screen
-        name="MonthlyHome"
-        component={MonthlyScreen}
-        options={{ headerShown: false }}
-      />
-      <MonthlyStack.Screen
-        name="PaidRooms"
-        component={PaidRoomsScreen}
-        options={{ title: "Paid Rooms" }}
-      />
-      <MonthlyStack.Screen
-        name="PendingRooms"
-        component={PendingRoomsScreen}
-        options={{ title: "Pending Rooms" }}
-      />
-      <MonthlyStack.Screen
-        name="MonthlyDetails"
-        component={MonthlyDetailsScreen}
-        options={{ title: "Monthly Details" }}
-      />
-    </MonthlyStack.Navigator>
-  );
-};
 
 const MainTabs = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Feather.glyphMap;
 
           switch (route.name) {
@@ -94,7 +63,7 @@ const MainTabs = () => {
               iconName = "calendar";
               break;
             case "Status":
-              iconName = "pie-chart";
+              iconName = "check-circle";
               break;
             case "Trends":
               iconName = "trending-up";
@@ -108,12 +77,10 @@ const MainTabs = () => {
 
           return <Feather name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: "#007AFF",
-        tabBarInactiveTintColor: "gray",
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Monthly" component={MonthlyNavigator} />
+      <Tab.Screen name="Monthly" component={MonthlyScreen} />
       <Tab.Screen name="Status" component={StatusScreen} />
       <Tab.Screen name="Trends" component={TrendsScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
@@ -125,6 +92,7 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName="Auth"
         screenOptions={{
           headerShown: false,
         }}
@@ -135,46 +103,20 @@ const AppNavigator = () => {
           component={BuildingSelectionScreen}
         />
         <Stack.Screen name="Main" component={MainTabs} />
-        <Stack.Screen
-          name="TenantLedger"
-          component={TenantLedgerScreen}
-          options={{ headerShown: true, title: "Tenant Ledger" }}
-        />
+        <Stack.Screen name="TenantLedger" component={TenantLedgerScreen} />
         <Stack.Screen
           name="TransactionsList"
           component={TransactionsListScreen}
-          options={{ headerShown: true, title: "Transactions" }}
         />
-        <Stack.Screen
-          name="RoomList"
-          component={RoomListScreen}
-          options={{ headerShown: true, title: "Rooms" }}
-        />
-        <Stack.Screen
-          name="TenantList"
-          component={TenantListScreen}
-          options={{ headerShown: true, title: "Tenants" }}
-        />
-        <Stack.Screen
-          name="AddRoom"
-          component={AddRoomScreen}
-          options={{ headerShown: true, title: "Add Room" }}
-        />
-        <Stack.Screen
-          name="AddTenant"
-          component={AddTenantScreen}
-          options={{ headerShown: true, title: "Add Tenant" }}
-        />
-        <Stack.Screen
-          name="EditRoom"
-          component={EditRoomScreen}
-          options={{ headerShown: true, title: "Edit Room" }}
-        />
-        <Stack.Screen
-          name="EditTenant"
-          component={EditTenantScreen}
-          options={{ headerShown: true, title: "Edit Tenant" }}
-        />
+        <Stack.Screen name="RoomList" component={RoomListScreen} />
+        <Stack.Screen name="TenantList" component={TenantListScreen} />
+        <Stack.Screen name="AddRoom" component={AddRoomScreen} />
+        <Stack.Screen name="AddTenant" component={AddTenantScreen} />
+        <Stack.Screen name="EditRoom" component={EditRoomScreen} />
+        <Stack.Screen name="EditTenant" component={EditTenantScreen} />
+        <Stack.Screen name="PaidRooms" component={PaidRoomsScreen} />
+        <Stack.Screen name="PendingRooms" component={PendingRoomsScreen} />
+        <Stack.Screen name="MonthlyDetails" component={MonthlyDetailsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -24,14 +24,15 @@ const tenantService = {
     }
   },
 
-  // Create a new tenant in a specific building
+  // Create a new tenant in a room
   createTenant: async (
     buildingId: string,
+    roomId: string,
     tenantData: CreateTenantRequest
   ): Promise<Tenant> => {
     try {
       const response = await api.post(
-        `/buildings/${buildingId}/tenants`,
+        `/buildings/${buildingId}/rooms/${roomId}/tenant`,
         tenantData
       );
       console.log("createTenant response:", response);
