@@ -24,10 +24,10 @@ interface RoomCount {
 }
 
 const roomService = {
-  // Get all rooms
-  getAllRooms: async (): Promise<Room[]> => {
+  // Get all rooms for a specific building
+  getAllRooms: async (buildingId: string): Promise<Room[]> => {
     try {
-      const response = await api.get("/rooms");
+      const response = await api.get(`/buildings/${buildingId}/rooms`);
       console.log("getAllRooms response:", response);
       if (response?.data) {
         // Check if the response is wrapped in a data property
@@ -45,10 +45,10 @@ const roomService = {
     }
   },
 
-  // Get room counts
-  getRoomCounts: async (): Promise<RoomCount> => {
+  // Get room counts for a specific building
+  getRoomCounts: async (buildingId: string): Promise<RoomCount> => {
     try {
-      const response = await api.get("/rooms/count");
+      const response = await api.get(`/buildings/${buildingId}/rooms/count`);
       console.log("getRoomCounts response:", response);
       if (response?.data) {
         return {
@@ -63,10 +63,10 @@ const roomService = {
     }
   },
 
-  // Get vacant rooms
-  getVacantRooms: async (): Promise<number> => {
+  // Get vacant rooms for a specific building
+  getVacantRooms: async (buildingId: string): Promise<number> => {
     try {
-      const counts = await roomService.getRoomCounts();
+      const counts = await roomService.getRoomCounts(buildingId);
       return counts.vacantCount;
     } catch (error) {
       console.error("Error in getVacantRooms:", error);
@@ -74,10 +74,10 @@ const roomService = {
     }
   },
 
-  // Get occupied rooms
-  getOccupiedRooms: async (): Promise<number> => {
+  // Get occupied rooms for a specific building
+  getOccupiedRooms: async (buildingId: string): Promise<number> => {
     try {
-      const counts = await roomService.getRoomCounts();
+      const counts = await roomService.getRoomCounts(buildingId);
       return counts.occupiedCount;
     } catch (error) {
       console.error("Error in getOccupiedRooms:", error);
@@ -85,10 +85,16 @@ const roomService = {
     }
   },
 
-  // Create a new room
-  createRoom: async (roomData: CreateRoomRequest): Promise<Room> => {
+  // Create a new room in a specific building
+  createRoom: async (
+    buildingId: string,
+    roomData: CreateRoomRequest
+  ): Promise<Room> => {
     try {
-      const response = await api.post("/rooms", roomData);
+      const response = await api.post(
+        `/buildings/${buildingId}/rooms`,
+        roomData
+      );
       if (response?.data) {
         return response.data;
       }
@@ -112,10 +118,10 @@ const roomService = {
     }
   },
 
-  // Get total number of rooms
-  getTotalRooms: async (): Promise<RoomStats> => {
+  // Get total number of rooms for a specific building
+  getTotalRooms: async (buildingId: string): Promise<RoomStats> => {
     try {
-      const counts = await roomService.getRoomCounts();
+      const counts = await roomService.getRoomCounts(buildingId);
       return {
         totalRooms: counts.occupiedCount + counts.vacantCount,
         activeRooms: counts.occupiedCount + counts.vacantCount, // Since we don't have this info, using total
@@ -127,10 +133,10 @@ const roomService = {
     }
   },
 
-  // Get vacant rooms list
-  getVacantRoomsList: async (): Promise<Room[]> => {
+  // Get vacant rooms list for a specific building
+  getVacantRoomsList: async (buildingId: string): Promise<Room[]> => {
     try {
-      const response = await api.get("/rooms/vacant");
+      const response = await api.get(`/buildings/${buildingId}/rooms/vacant`);
       console.log("getVacantRoomsList response:", response);
       if (response?.data) {
         return response.data;

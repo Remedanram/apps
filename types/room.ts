@@ -23,6 +23,5 @@ export interface CreateRoomRequest {
   roomName: string;
   rentAmount: number;
   description?: string;
-  active: boolean;
-  occupied: boolean;
+  buildingId: string;
 }

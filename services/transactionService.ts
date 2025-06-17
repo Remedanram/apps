@@ -12,10 +12,12 @@ export interface Transaction {
 }
 
 const transactionService = {
-  // Get recent transactions
-  getRecentTransactions: async (): Promise<Transaction[]> => {
+  // Get recent transactions for a specific building
+  getRecentTransactions: async (buildingId: string): Promise<Transaction[]> => {
     try {
-      const response = await api.get("/transactions/recentTransactions");
+      const response = await api.get(
+        `/buildings/${buildingId}/transactions/recent`
+      );
       console.log("getRecentTransactions response:", response);
       if (response?.data) {
         return response.data;
@@ -27,10 +29,12 @@ const transactionService = {
     }
   },
 
-  // Get all transactions
-  getAllTransactions: async (): Promise<Transaction[]> => {
+  // Get all transactions for a specific building
+  getAllTransactions: async (buildingId: string): Promise<Transaction[]> => {
     try {
-      const response = await api.get("/transactions/allTransactions");
+      const response = await api.get(
+        `/buildings/${buildingId}/transactions/all`
+      );
       console.log("getAllTransactions response:", response);
       if (response?.data) {
         return response.data;

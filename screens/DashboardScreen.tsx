@@ -6,13 +6,12 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Text,
 } from "react-native";
-import { Text } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Card from "../components/Card";
 import theme from "../constants/theme";
 import { DashboardData, RootStackParamList } from "../types/navigation";
-import { mockDashboardData } from "../services/mockData";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import roomService from "../services/roomService";
 import type { RoomStats } from "../types/room";
@@ -21,7 +20,7 @@ import transactionService from "../services/transactionService";
 import type { Transaction } from "../services/transactionService";
 import { useSelectedBuilding } from "../hooks/useSelectedBuilding";
 import AddBuildingModal from "../components/AddBuildingModal";
-import { useNavigation, CommonActions } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 
 type DashboardScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -53,15 +52,27 @@ const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<DashboardScreenNavigationProp>();
 
   const loadDashboardData = async () => {
+    if (!selectedBuilding?.id) {
+      console.log("No building selected");
+      return;
+    }
+
     try {
       setLoading(true);
       // Fetch room statistics
-      const roomStats: RoomStats = await roomService.getTotalRooms();
-      const tenantStats = await tenantService.getTotalTenants();
-      const vacantRooms = await roomService.getVacantRooms();
-      const occupiedRooms = await roomService.getOccupiedRooms();
-      const recentTransactions =
-        await transactionService.getRecentTransactions();
+      const roomStats: RoomStats = await roomService.getTotalRooms(
+        selectedBuilding.id
+      );
+      const tenantStats = await tenantService.getTotalTenants(
+        selectedBuilding.id
+      );
+      const vacantRooms = await roomService.getVacantRooms(selectedBuilding.id);
+      const occupiedRooms = await roomService.getOccupiedRooms(
+        selectedBuilding.id
+      );
+      const recentTransactions = await transactionService.getRecentTransactions(
+        selectedBuilding.id
+      );
 
       // Update dashboard data with real data
       setDashboardData((prev) => ({
@@ -90,8 +101,10 @@ const DashboardScreen: React.FC = () => {
   };
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (selectedBuilding?.id) {
+      loadDashboardData();
+    }
+  }, [selectedBuilding?.id]);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -141,18 +154,13 @@ const DashboardScreen: React.FC = () => {
             color={theme.colors.text.primary}
           />
         </TouchableOpacity>
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setIsAddBuildingModalVisible(true)}
-          >
-            <Feather name="plus" size={20} color={theme.colors.primary} />
-            <Text style={styles.addButtonText}>Add Building</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.notificationButton}>
-            <Feather name="bell" size={24} color={theme.colors.text.primary} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setIsAddBuildingModalVisible(true)}
+        >
+          <Feather name="plus" size={20} color={theme.colors.primary} />
+          <Text style={styles.addButtonText}>Add Building</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -161,22 +169,6 @@ const DashboardScreen: React.FC = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.buildingName}>
-              {selectedBuilding?.name || "Loading..."}
-            </Text>
-            <Text style={styles.subtitle}>Dashboard Overview</Text>
-          </View>
-          <TouchableOpacity style={styles.notificationButton}>
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationCount}>2</Text>
-            </View>
-            <Feather name="bell" size={24} color={theme.colors.text.primary} />
-          </TouchableOpacity>
-        </View>
-
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
@@ -346,10 +338,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     marginRight: theme.spacing.xs,
   },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -357,7 +345,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
-    marginRight: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.primary,
   },
@@ -367,36 +354,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: theme.spacing.xs,
   },
-  notificationButton: {
-    padding: theme.spacing.sm,
-  },
-  notificationBadge: {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    backgroundColor: theme.colors.error,
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1,
-  },
-  notificationCount: {
-    color: "white",
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: "700",
-  },
   content: {
     flex: 1,
   },
-  subtitle: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.text.secondary,
-    marginTop: theme.spacing.xs,
-  },
   actionButtons: {
     flexDirection: "row",
+    justifyContent: "space-between",
     padding: theme.spacing.md,
     gap: theme.spacing.md,
   },
@@ -410,54 +373,46 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   actionButtonText: {
-    fontSize: theme.typography.sizes.md,
+    fontSize: theme.typography.sizes.sm,
     fontWeight: "600",
-    color: theme.colors.text.primary,
   },
   statsGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
     padding: theme.spacing.md,
-    paddingTop: 0,
+    gap: theme.spacing.md,
   },
   statsButton: {
-    width: "48%",
+    flex: 1,
   },
   statsCard: {
-    padding: theme.spacing.md,
     alignItems: "center",
+    padding: theme.spacing.md,
   },
   statsValue: {
     fontSize: theme.typography.sizes.xl,
     fontWeight: "700",
-    marginVertical: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
   },
   statsLabel: {
     fontSize: theme.typography.sizes.sm,
     color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
   },
   occupancyCard: {
-    padding: theme.spacing.md,
-    marginHorizontal: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: theme.spacing.md,
+    margin: theme.spacing.md,
+    padding: theme.spacing.lg,
   },
   cardTitle: {
     fontSize: theme.typography.sizes.lg,
     fontWeight: "600",
+    marginBottom: theme.spacing.md,
   },
   occupancyRate: {
-    fontSize: theme.typography.sizes.xxxl,
+    fontSize: theme.typography.sizes.xxl,
     fontWeight: "700",
     color: theme.colors.primary,
     textAlign: "center",
-    marginVertical: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
   },
   roomStatusContainer: {
     flexDirection: "row",
@@ -467,8 +422,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   roomStatusValue: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: "600",
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: "700",
   },
   roomStatusLabel: {
     fontSize: theme.typography.sizes.sm,
@@ -476,8 +431,13 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xs,
   },
   transactionsCard: {
-    padding: theme.spacing.md,
-    marginHorizontal: theme.spacing.md,
+    margin: theme.spacing.md,
+    padding: theme.spacing.lg,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
   viewMoreButton: {
@@ -487,20 +447,19 @@ const styles = StyleSheet.create({
   viewMoreText: {
     color: theme.colors.primary,
     fontSize: theme.typography.sizes.sm,
+    fontWeight: "600",
     marginRight: theme.spacing.xs,
   },
   transactionItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   transactionName: {
     fontSize: theme.typography.sizes.md,
     fontWeight: "600",
-    color: theme.colors.text.primary,
   },
   transactionPhone: {
     fontSize: theme.typography.sizes.sm,
@@ -520,8 +479,8 @@ const styles = StyleSheet.create({
   transactionDate: {
     fontSize: theme.typography.sizes.sm,
     color: theme.colors.text.secondary,
-    textAlign: "right",
     marginTop: theme.spacing.xs,
+    textAlign: "right",
   },
 });
 

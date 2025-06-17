@@ -1,27 +1,6 @@
 import api from "./api";
-
-export enum TenantStatus {
-  ACTIVE = "ACTIVE",
-  INACTIVE = "INACTIVE",
-}
-
-export interface Tenant {
-  id: number;
-  name: string;
-  phone: string;
-  email: string;
-  moveInDate: string;
-  moveOutDate: string | null;
-  status: TenantStatus;
-  description: string;
-  room: {
-    roomName: string;
-    rentAmount: number;
-    description: string;
-    active: boolean;
-    occupied: boolean;
-  };
-}
+import type { Tenant, CreateTenantRequest } from "../types/tenant";
+import { TenantStatus } from "../types/tenant";
 
 export interface TenantStats {
   totalTenants: number;
@@ -29,19 +8,11 @@ export interface TenantStats {
   inactiveTenants: number;
 }
 
-export interface CreateTenantRequest {
-  name: string;
-  phone: string;
-  email: string;
-  roomName: string;
-  description: string;
-}
-
 const tenantService = {
-  // Get all tenants
-  getAllTenants: async (): Promise<Tenant[]> => {
+  // Get all tenants for a specific building
+  getAllTenants: async (buildingId: string): Promise<Tenant[]> => {
     try {
-      const response = await api.get("/tenants");
+      const response = await api.get(`/buildings/${buildingId}/tenants`);
       console.log("getAllTenants response:", response);
       if (response?.data) {
         return response.data;
@@ -53,10 +24,16 @@ const tenantService = {
     }
   },
 
-  // Create a new tenant
-  createTenant: async (tenantData: CreateTenantRequest): Promise<Tenant> => {
+  // Create a new tenant in a specific building
+  createTenant: async (
+    buildingId: string,
+    tenantData: CreateTenantRequest
+  ): Promise<Tenant> => {
     try {
-      const response = await api.post("/tenants", tenantData);
+      const response = await api.post(
+        `/buildings/${buildingId}/tenants`,
+        tenantData
+      );
       console.log("createTenant response:", response);
       if (response?.data) {
         return response.data;
@@ -68,10 +45,10 @@ const tenantService = {
     }
   },
 
-  // Get total number of tenants
-  getTotalTenants: async (): Promise<TenantStats> => {
+  // Get total number of tenants for a specific building
+  getTotalTenants: async (buildingId: string): Promise<TenantStats> => {
     try {
-      const tenants = await tenantService.getAllTenants();
+      const tenants = await tenantService.getAllTenants(buildingId);
       console.log("getTotalTenants response:", tenants);
 
       const stats = {
@@ -90,8 +67,9 @@ const tenantService = {
     }
   },
 
-  // Update a tenant
+  // Update a tenant in a specific building
   updateTenant: async (
+    buildingId: string,
     roomName: string,
     tenantData: Partial<Tenant>
   ): Promise<Tenant> => {
@@ -112,7 +90,10 @@ const tenantService = {
         description: tenantData.description || "",
       };
 
-      const response = await api.put(`/tenants/${roomName}`, updateData);
+      const response = await api.put(
+        `/buildings/${buildingId}/tenants/${roomName}`,
+        updateData
+      );
       console.log("updateTenant response:", response);
       if (response?.data) {
         return response.data;
@@ -124,10 +105,14 @@ const tenantService = {
     }
   },
 
-  // Delete a tenant
-  deleteTenant: async (roomName: string, phone: string): Promise<void> => {
+  // Delete a tenant from a specific building
+  deleteTenant: async (
+    buildingId: string,
+    roomName: string,
+    phone: string
+  ): Promise<void> => {
     try {
-      await api.delete(`/tenants/${roomName}/${phone}`);
+      await api.delete(`/buildings/${buildingId}/tenants/${roomName}/${phone}`);
       // If we get here, the deletion was successful
       return;
     } catch (error: any) {
