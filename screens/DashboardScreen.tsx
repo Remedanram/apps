@@ -18,7 +18,6 @@ import type { RoomStats } from "../types/room";
 import tenantService from "../services/tenantService";
 import transactionService from "../services/transactionService";
 import type { Transaction } from "../services/transactionService";
-import { useSelectedBuilding } from "../hooks/useSelectedBuilding";
 import AddBuildingModal from "../components/AddBuildingModal";
 import { useNavigation } from "@react-navigation/native";
 import { useBuilding } from "../contexts/BuildingContext";
@@ -29,7 +28,7 @@ type DashboardScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const DashboardScreen: React.FC = () => {
-  const { selectedBuilding, loading: buildingLoading } = useSelectedBuilding();
+  const { selectedBuilding } = useBuilding();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData>({
@@ -146,9 +145,7 @@ const DashboardScreen: React.FC = () => {
           style={styles.buildingSelector}
         >
           <Text style={styles.buildingName}>
-            {buildingLoading
-              ? "Loading..."
-              : selectedBuilding?.name || "Select Building"}
+            {selectedBuilding?.name || "Select Building"}
           </Text>
           <Feather
             name="chevron-down"

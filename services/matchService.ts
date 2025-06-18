@@ -1,4 +1,5 @@
 import api from "./api";
+import { useBuilding } from "../contexts/BuildingContext";
 
 export interface MatchRoom {
   roomName: string;
@@ -15,9 +16,11 @@ export interface MatchRoom {
 
 const matchService = {
   // Get available years from transactions
-  getAvailableYears: async (): Promise<number[]> => {
+  getAvailableYears: async (buildingId: string): Promise<number[]> => {
     try {
-      const response = await api.get("/transactions/years");
+      const response = await api.get(
+        `/buildings/${buildingId}/transactions/years`
+      );
       if (response?.data) {
         return response.data;
       }
@@ -29,9 +32,14 @@ const matchService = {
   },
 
   // Get total revenue for a specific period (YYYY-MM)
-  getTotalRevenue: async (period: string): Promise<number> => {
+  getTotalRevenue: async (
+    buildingId: string,
+    period: string
+  ): Promise<number> => {
     try {
-      const response = await api.get(`/matches/total-paid?period=${period}`);
+      const response = await api.get(
+        `/buildings/${buildingId}/matches/total-paid?period=${period}`
+      );
       if (response?.data !== undefined) {
         return response.data;
       }
@@ -43,9 +51,14 @@ const matchService = {
   },
 
   // Get paid rooms for a specific period (YYYY-MM)
-  getPaidRooms: async (period: string): Promise<MatchRoom[]> => {
+  getPaidRooms: async (
+    buildingId: string,
+    period: string
+  ): Promise<MatchRoom[]> => {
     try {
-      const response = await api.get(`/matches/paid-rooms?period=${period}`);
+      const response = await api.get(
+        `/buildings/${buildingId}/matches/paid-rooms?period=${period}`
+      );
       if (response?.data) {
         return response.data;
       }
@@ -57,10 +70,15 @@ const matchService = {
   },
 
   // Get unpaid rooms for a specific period (YYYY-MM)
-  getUnpaidRooms: async (period: string): Promise<MatchRoom[]> => {
+  getUnpaidRooms: async (
+    buildingId: string,
+    period: string
+  ): Promise<MatchRoom[]> => {
     try {
       console.log("Fetching unpaid rooms for period:", period);
-      const response = await api.get(`/matches/unpaid-rooms?period=${period}`);
+      const response = await api.get(
+        `/buildings/${buildingId}/matches/unpaid-rooms?period=${period}`
+      );
       console.log("API response:", response);
       if (response?.data) {
         console.log("Parsed data:", response.data);
@@ -75,9 +93,11 @@ const matchService = {
   },
 
   // Get paid rooms count for a specific period (YYYY-MM)
-  getPaidCount: async (period: string): Promise<number> => {
+  getPaidCount: async (buildingId: string, period: string): Promise<number> => {
     try {
-      const response = await api.get(`/matches/paid-count?period=${period}`);
+      const response = await api.get(
+        `/buildings/${buildingId}/matches/paid-count?period=${period}`
+      );
       if (response?.data !== undefined) {
         return response.data;
       }
@@ -89,9 +109,14 @@ const matchService = {
   },
 
   // Get unpaid rooms count for a specific period (YYYY-MM)
-  getUnpaidCount: async (period: string): Promise<number> => {
+  getUnpaidCount: async (
+    buildingId: string,
+    period: string
+  ): Promise<number> => {
     try {
-      const response = await api.get(`/matches/unpaid-count?period=${period}`);
+      const response = await api.get(
+        `/buildings/${buildingId}/matches/unpaid-count?period=${period}`
+      );
       if (response?.data !== undefined) {
         return response.data;
       }

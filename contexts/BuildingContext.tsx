@@ -6,11 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-interface Building {
-  id: string;
-  name: string;
-}
+import { Building } from "../services/buildingService";
 
 interface BuildingContextType {
   selectedBuilding: Building | null;

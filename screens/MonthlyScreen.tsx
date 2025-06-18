@@ -14,14 +14,16 @@ import theme from "../constants/theme";
 import { Feather } from "@expo/vector-icons";
 import { format, getYear } from "date-fns";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { MonthlyStackParamList } from "../navigation/AppNavigator";
+import { RootStackParamList } from "../navigation/AppNavigator";
 import matchService, { MatchRoom } from "../services/matchService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Props = {
-  navigation: NativeStackNavigationProp<MonthlyStackParamList, "MonthlyHome">;
+  navigation: NativeStackNavigationProp<RootStackParamList, "MonthlyHome">;
 };
 
 const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
+  const [buildingId, setBuildingId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -34,12 +36,28 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   const [totalRevenue, setTotalRevenue] = useState(0);
 
   useEffect(() => {
-    loadYears();
+    loadBuildingId();
   }, []);
 
-  const loadYears = async () => {
+  const loadBuildingId = async () => {
     try {
-      const years = await matchService.getAvailableYears();
+      const storedBuildingId = await AsyncStorage.getItem("selectedBuildingId");
+      setBuildingId(storedBuildingId);
+    } catch (error) {
+      console.error("Error loading building ID:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (buildingId) {
+      loadYears();
+    }
+  }, [buildingId]);
+
+  const loadYears = async () => {
+    if (!buildingId) return;
+    try {
+      const years = await matchService.getAvailableYears(buildingId);
       setAvailableYears(Array.isArray(years) ? years : []);
     } catch (error) {
       console.error("Error loading years:", error);
@@ -48,16 +66,17 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const loadData = async () => {
+    if (!buildingId) return;
     try {
       const period = format(selectedDate, "yyyy-MM");
 
       const [paid, unpaid, paidCountData, unpaidCountData, revenue] =
         await Promise.all([
-          matchService.getPaidRooms(period),
-          matchService.getUnpaidRooms(period),
-          matchService.getPaidCount(period),
-          matchService.getUnpaidCount(period),
-          matchService.getTotalRevenue(period),
+          matchService.getPaidRooms(buildingId, period),
+          matchService.getUnpaidRooms(buildingId, period),
+          matchService.getPaidCount(buildingId, period),
+          matchService.getUnpaidCount(buildingId, period),
+          matchService.getTotalRevenue(buildingId, period),
         ]);
 
       setPaidRooms(Array.isArray(paid) ? paid : []);
@@ -76,12 +95,14 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    loadData();
-  }, [selectedDate]);
+    if (buildingId) {
+      loadData();
+    }
+  }, [selectedDate, buildingId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([loadData(), loadYears()]);
+    await Promise.all([loadBuildingId(), loadData(), loadYears()]);
     setRefreshing(false);
   };
 

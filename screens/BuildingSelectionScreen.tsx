@@ -7,7 +7,6 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
-  ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,7 +17,6 @@ import { Card } from "../components";
 import { useBuilding } from "../contexts/BuildingContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
-import api from "../services/api";
 
 type Props = {
   navigation: NativeStackNavigationProp<
@@ -38,10 +36,8 @@ const BuildingSelectionScreen: React.FC<Props> = ({ navigation }) => {
 
   const fetchBuildings = async () => {
     try {
-      const response = await api.get("/buildings");
-      if (response?.data) {
-        setBuildings(response.data);
-      }
+      const buildings = await buildingService.getAllBuildings();
+      setBuildings(buildings);
     } catch (error) {
       console.error("Error fetching buildings:", error);
       Alert.alert("Error", "Failed to load buildings. Please try again.");
@@ -72,6 +68,38 @@ const BuildingSelectionScreen: React.FC<Props> = ({ navigation }) => {
     </TouchableOpacity>
   );
 
+  const renderHeader = () => (
+    <Card style={styles.card}>
+      <Text style={styles.title}>Select a Building</Text>
+
+      {/* Create Building Button - always visible */}
+      <TouchableOpacity
+        style={styles.createBuildingButton}
+        onPress={() => {
+          // Navigate to building creation (you'll need to implement this screen)
+          Alert.alert(
+            "Create Building",
+            "Building creation feature will be implemented here.",
+            [{ text: "Cancel", style: "cancel" }, { text: "OK" }]
+          );
+        }}
+      >
+        <Feather name="plus" size={20} color={theme.colors.primary} />
+        <Text style={styles.createBuildingButtonText}>Create New Building</Text>
+      </TouchableOpacity>
+    </Card>
+  );
+
+  const renderEmptyComponent = () => (
+    <View style={styles.noBuildingsContainer}>
+      <Feather name="home" size={48} color={theme.colors.text.tertiary} />
+      <Text style={styles.noBuildingsText}>No buildings available</Text>
+      <Text style={styles.noBuildingsSubtext}>
+        Create your first building to get started
+      </Text>
+    </View>
+  );
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -82,24 +110,17 @@ const BuildingSelectionScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Card style={styles.card}>
-        <Text style={styles.title}>Select a Building</Text>
-        {buildings.length === 0 ? (
-          <Text style={styles.noBuildingsText}>No buildings available</Text>
-        ) : (
-          <FlatList
-            data={buildings}
-            renderItem={renderBuildingItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContainer}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No buildings available</Text>
-            }
-          />
-        )}
-      </Card>
-    </ScrollView>
+    <View style={styles.container}>
+      <FlatList
+        data={buildings}
+        renderItem={renderBuildingItem}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmptyComponent}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 };
 
@@ -131,7 +152,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   listContainer: {
-    padding: theme.spacing.md,
+    flexGrow: 1,
+    paddingHorizontal: theme.spacing.md,
   },
   buildingCard: {
     flexDirection: "row",
@@ -156,17 +178,40 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.xs,
   },
-  emptyText: {
-    textAlign: "center",
+  createBuildingButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    ...theme.shadows.small,
+  },
+  createBuildingButtonText: {
     fontSize: theme.typography.sizes.md,
-    color: theme.colors.text.secondary,
-    marginTop: theme.spacing.xl,
+    fontWeight: "bold",
+    color: theme.colors.primary,
+    marginLeft: theme.spacing.xs,
+  },
+  noBuildingsContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: theme.spacing.xxl,
   },
   noBuildingsText: {
     textAlign: "center",
     color: theme.colors.text.secondary,
     fontSize: theme.typography.sizes.md,
     fontStyle: "italic",
+    marginTop: theme.spacing.md,
+  },
+  noBuildingsSubtext: {
+    textAlign: "center",
+    color: theme.colors.text.tertiary,
+    fontSize: theme.typography.sizes.md,
+    marginTop: theme.spacing.sm,
   },
 });
 

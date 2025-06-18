@@ -1,9 +1,10 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Room } from "./room";
-import { Tenant } from "../services/tenantService";
+import { Tenant } from "./tenant";
 
 export type RootStackParamList = {
   Auth: undefined;
+  BuildingSelection: undefined;
   Main: undefined;
   TenantLedger: { phoneNumber: string };
   TransactionsList: { status: string };

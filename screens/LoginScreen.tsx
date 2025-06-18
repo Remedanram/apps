@@ -16,6 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import theme from "../constants/theme";
 import authService from "../services/authService";
+import buildingService from "../services/buildingService";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
 import { useBuilding } from "../contexts/BuildingContext";
@@ -31,7 +32,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { selectedBuilding } = useBuilding();
+  const { selectedBuilding, setSelectedBuilding } = useBuilding();
 
   const handleAuth = async () => {
     if (isLogin) {
@@ -68,18 +69,60 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           })
         );
 
-        // If we already have a selected building, go directly to main screen
-        if (selectedBuilding) {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "Main" }],
-          });
-        } else {
-          // Otherwise, go to building selection
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "BuildingSelection" }],
-          });
+        // Fetch buildings after successful login
+        try {
+          const buildings = await buildingService.getAllBuildings();
+          console.log("Buildings fetched:", buildings);
+
+          if (buildings.length === 0) {
+            // No buildings exist - prompt user to create one
+            Alert.alert(
+              "No Buildings Found",
+              "You don't have any buildings yet. Would you like to create your first building?",
+              [
+                {
+                  text: "Cancel",
+                  style: "cancel",
+                  onPress: () => {
+                    // Stay on login screen
+                    setLoading(false);
+                  },
+                },
+                {
+                  text: "Create Building",
+                  onPress: () => {
+                    // Navigate to building creation
+                    navigation.reset({
+                      index: 0,
+                      routes: [{ name: "BuildingSelection" }],
+                    });
+                  },
+                },
+              ]
+            );
+            return;
+          } else if (buildings.length === 1) {
+            // Only one building - auto-select it
+            const building = buildings[0];
+            await setSelectedBuilding(building);
+            console.log("Auto-selected building:", building);
+
+            // Navigate directly to main screen
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Main" }],
+            });
+          } else {
+            // Multiple buildings - let user select
+            console.log("Multiple buildings found, navigating to selection");
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "BuildingSelection" }],
+            });
+          }
+        } catch (buildingError) {
+          console.error("Error fetching buildings:", buildingError);
+          Alert.alert("Error", "Failed to load buildings. Please try again.");
         }
       } else {
         response = await authService.signup({ name, email, password });
