@@ -201,7 +201,7 @@ const api = {
     }
   },
 
-  async testConnection() {
+  async testConnection(buildingId?: string) {
     try {
       console.log("[Connection Test] Starting...");
 
@@ -218,23 +218,26 @@ const api = {
         time: `${pingTime}ms`,
       });
 
-      // Then try the actual rooms endpoint with retry logic
-      const response = await fetchWithTimeout(`${BASE_URL}/rooms`, {
-        method: "GET",
-      });
-
-      const data = await response.json();
-      console.log("[Connection Test] Success:", {
-        status: response.status,
-        data,
-        timestamp: new Date().toISOString(),
-      });
+      // If buildingId is provided, test a building-specific endpoint
+      if (buildingId) {
+        const response = await fetchWithTimeout(
+          `${BASE_URL}/buildings/${buildingId}/rooms`,
+          {
+            method: "GET",
+          }
+        );
+        const data = await response.json();
+        console.log("[Connection Test] Success:", {
+          status: response.status,
+          data,
+          timestamp: new Date().toISOString(),
+        });
+      }
 
       return true;
     } catch (error: unknown) {
       console.error("[Connection Test] Failed:", {
         message: error instanceof Error ? error.message : "Unknown error",
-        url: `${BASE_URL}/rooms`,
         timestamp: new Date().toISOString(),
       });
       return false;

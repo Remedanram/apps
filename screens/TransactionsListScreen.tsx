@@ -17,6 +17,7 @@ import theme from "../constants/theme";
 import { Transaction as GlobalTransaction } from "../types/navigation";
 import { mockTransactions } from "../services/mockData";
 import api from "../services/api";
+import { useBuilding } from "../contexts/BuildingContext";
 
 interface Transaction {
   id: number;
@@ -47,6 +48,7 @@ const TransactionsListScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route =
     useRoute<RouteProp<Record<string, TransactionsListScreenProps>, string>>();
+  const { selectedBuilding } = useBuilding();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(
@@ -60,11 +62,14 @@ const TransactionsListScreen = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchRecentTransactions = async () => {
+    if (!selectedBuilding?.id) return;
     setLoadingRecent(true);
     setError(null);
     try {
       console.log("Attempting to fetch recent transactions...");
-      const { data } = await api.get("/transactions/recentTransactions");
+      const { data } = await api.get(
+        `/buildings/${selectedBuilding.id}/transactions/recent`
+      );
       console.log("Recent transactions fetched successfully:", data);
       setRecentTransactions(data);
     } catch (error) {
@@ -85,13 +90,16 @@ const TransactionsListScreen = () => {
   };
 
   const fetchTransactions = async (pageNumber: number) => {
+    if (!selectedBuilding?.id) return;
     if (loading || (pageNumber > 1 && !hasMore)) return;
 
     setLoading(true);
     setError(null);
     try {
       console.log("Attempting to fetch all transactions...");
-      const { data } = await api.get("/transactions/allTransactions");
+      const { data } = await api.get(
+        `/buildings/${selectedBuilding.id}/transactions`
+      );
       console.log("All transactions fetched successfully:", data);
       setAllTransactions(data);
       setTransactions(data);
@@ -131,13 +139,15 @@ const TransactionsListScreen = () => {
   };
 
   useEffect(() => {
-    testApiConnection();
-    if (route.params?.showRecent) {
-      fetchRecentTransactions();
-    } else {
-      fetchTransactions(1);
+    if (selectedBuilding?.id) {
+      testApiConnection();
+      if (route.params?.showRecent) {
+        fetchRecentTransactions();
+      } else {
+        fetchTransactions(1);
+      }
     }
-  }, [route.params?.showRecent]);
+  }, [route.params?.showRecent, selectedBuilding]);
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -259,71 +269,84 @@ const TransactionsListScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Export Button Container */}
-      <View style={styles.exportButtonContainer}>
-        <TouchableOpacity style={styles.exportButton}>
-          <Text style={styles.exportButtonText}>Export</Text>
-        </TouchableOpacity>
-      </View>
-
-      {renderError()}
-      {route.params?.showRecent ? (
-        renderRecentTransactions()
+      {/* Building Selection Check */}
+      {!selectedBuilding?.id ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No Building Selected</Text>
+          <Text style={styles.errorText}>
+            Please select a building from the building selection screen to view
+            transactions.
+          </Text>
+        </View>
       ) : (
         <>
-          <Card variant="outlined" style={styles.searchCard}>
-            <View style={styles.searchContainer}>
-              <Feather
-                name="search"
-                size={20}
-                color={theme.colors.text.secondary}
-              />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search transactions..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setSearchQuery("")}
-                  style={styles.clearButton}
-                >
+          {/* Export Button Container */}
+          <View style={styles.exportButtonContainer}>
+            <TouchableOpacity style={styles.exportButton}>
+              <Text style={styles.exportButtonText}>Export</Text>
+            </TouchableOpacity>
+          </View>
+
+          {renderError()}
+          {route.params?.showRecent ? (
+            renderRecentTransactions()
+          ) : (
+            <>
+              <Card variant="outlined" style={styles.searchCard}>
+                <View style={styles.searchContainer}>
                   <Feather
-                    name="x"
+                    name="search"
                     size={20}
                     color={theme.colors.text.secondary}
                   />
-                </TouchableOpacity>
-              )}
-            </View>
-          </Card>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search transactions..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setSearchQuery("")}
+                      style={styles.clearButton}
+                    >
+                      <Feather
+                        name="x"
+                        size={20}
+                        color={theme.colors.text.secondary}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </Card>
 
-          <FlatList
-            data={transactions}
-            renderItem={renderTransactionItem}
-            keyExtractor={(item) => item.id.toString()}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListEmptyComponent={() =>
-              !loading && !error ? (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
-                    {searchQuery
-                      ? "No matching transactions found"
-                      : "No transactions found"}
-                  </Text>
-                </View>
-              ) : null
-            }
-            ListFooterComponent={() =>
-              loading ? (
-                <View style={styles.loader}>
-                  <ActivityIndicator color={theme.colors.primary} />
-                </View>
-              ) : null
-            }
-          />
+              <FlatList
+                data={transactions}
+                renderItem={renderTransactionItem}
+                keyExtractor={(item) => item.id.toString()}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+                ListEmptyComponent={() =>
+                  !loading && !error ? (
+                    <View style={styles.emptyContainer}>
+                      <Text style={styles.emptyText}>
+                        {searchQuery
+                          ? "No matching transactions found"
+                          : "No transactions found"}
+                      </Text>
+                    </View>
+                  ) : null
+                }
+                ListFooterComponent={() =>
+                  loading ? (
+                    <View style={styles.loader}>
+                      <ActivityIndicator color={theme.colors.primary} />
+                    </View>
+                  ) : null
+                }
+              />
+            </>
+          )}
         </>
       )}
     </View>
