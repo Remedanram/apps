@@ -20,12 +20,14 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onBuildingAdded: () => void;
+  isNewUser?: boolean;
 }
 
 const AddBuildingModal: React.FC<Props> = ({
   visible,
   onClose,
   onBuildingAdded,
+  isNewUser = false,
 }) => {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -47,7 +49,12 @@ const AddBuildingModal: React.FC<Props> = ({
       };
 
       await buildingService.createBuilding(buildingData);
-      Alert.alert("Success", "Building added successfully");
+      Alert.alert(
+        "Success",
+        isNewUser
+          ? "Your first building has been created successfully!"
+          : "Building added successfully"
+      );
       onBuildingAdded();
       onClose();
       // Reset form
@@ -77,11 +84,31 @@ const AddBuildingModal: React.FC<Props> = ({
       >
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add New Building</Text>
+            <View style={styles.modalTitleContainer}>
+              {isNewUser && (
+                <Feather
+                  name="home"
+                  size={24}
+                  color={theme.colors.primary}
+                  style={styles.modalIcon}
+                />
+              )}
+              <Text style={styles.modalTitle}>
+                {isNewUser ? "Create Your First Building" : "Add New Building"}
+              </Text>
+            </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Feather name="x" size={24} color={theme.colors.text.primary} />
             </TouchableOpacity>
           </View>
+
+          {isNewUser && (
+            <View style={styles.newUserBanner}>
+              <Text style={styles.newUserBannerText}>
+                Welcome! Let's set up your first property
+              </Text>
+            </View>
+          )}
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
@@ -129,7 +156,13 @@ const AddBuildingModal: React.FC<Props> = ({
               disabled={loading}
             >
               <Text style={styles.submitButtonText}>
-                {loading ? "Adding..." : "Add Building"}
+                {loading
+                  ? isNewUser
+                    ? "Creating..."
+                    : "Adding..."
+                  : isNewUser
+                  ? "Create Building"
+                  : "Add Building"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -160,6 +193,13 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+  },
+  modalTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  modalIcon: {
+    marginRight: theme.spacing.md,
   },
   modalTitle: {
     fontSize: theme.typography.sizes.lg,
@@ -214,6 +254,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   submitButtonText: {
+    color: "white",
+    fontSize: theme.typography.sizes.md,
+    fontWeight: "600",
+  },
+  newUserBanner: {
+    backgroundColor: theme.colors.primary,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.lg,
+  },
+  newUserBannerText: {
     color: "white",
     fontSize: theme.typography.sizes.md,
     fontWeight: "600",

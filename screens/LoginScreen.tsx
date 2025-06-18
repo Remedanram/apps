@@ -69,25 +69,17 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           })
         );
 
-        // Fetch buildings after successful login
+        // Check if user has buildings
         try {
           const buildings = await buildingService.getAllBuildings();
           console.log("Buildings fetched:", buildings);
 
           if (buildings.length === 0) {
-            // No buildings exist - prompt user to create one
+            // No buildings exist - force user to create one
             Alert.alert(
               "No Buildings Found",
-              "You don't have any buildings yet. Would you like to create your first building?",
+              "You need to create your first building to continue.",
               [
-                {
-                  text: "Cancel",
-                  style: "cancel",
-                  onPress: () => {
-                    // Stay on login screen
-                    setLoading(false);
-                  },
-                },
                 {
                   text: "Create Building",
                   onPress: () => {
@@ -125,10 +117,67 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           Alert.alert("Error", "Failed to load buildings. Please try again.");
         }
       } else {
+        // SIGNUP FLOW
         response = await authService.signup({ name, email, password });
-        // After successful signup, switch to login mode
-        setIsLogin(true);
-        Alert.alert("Success", "Account created successfully. Please login.");
+        console.log("Signup response received:", response);
+
+        // After successful signup, automatically login to get token
+        try {
+          const loginResponse = await authService.login({ email, password });
+          console.log("Auto-login response:", loginResponse);
+
+          if (!loginResponse?.token) {
+            throw new Error("No token received after auto-login");
+          }
+
+          // Store auth data
+          await AsyncStorage.setItem("userToken", loginResponse.token);
+          await AsyncStorage.setItem(
+            "userData",
+            JSON.stringify({
+              id: loginResponse.user.id,
+              name: loginResponse.user.name,
+              email: loginResponse.user.email,
+            })
+          );
+
+          // Mark as new user for building creation flow
+          await AsyncStorage.setItem("isNewUser", "true");
+
+          // After successful signup and auto-login, automatically create first building
+          Alert.alert(
+            "Account Created Successfully!",
+            "Now let's create your first building to get started.",
+            [
+              {
+                text: "Create Building",
+                onPress: () => {
+                  // Navigate to building creation
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: "BuildingSelection" }],
+                  });
+                },
+              },
+            ]
+          );
+        } catch (loginError: any) {
+          console.error("Auto-login error:", loginError);
+          // If auto-login fails, show success message and ask user to login manually
+          Alert.alert(
+            "Account Created Successfully!",
+            "Your account has been created. Please login to continue.",
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  setIsLogin(true);
+                  setPassword(""); // Clear password for manual login
+                },
+              },
+            ]
+          );
+        }
       }
     } catch (error: any) {
       console.error("Auth error:", error);
