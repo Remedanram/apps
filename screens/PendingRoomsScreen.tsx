@@ -16,11 +16,12 @@ import { Feather } from "@expo/vector-icons";
 import Card from "../components/Card";
 import theme from "../constants/theme";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { MonthlyStackParamList } from "../navigation/AppNavigator";
+import { RootStackParamList } from "../navigation/AppNavigator";
 import matchService, { MatchRoom } from "../services/matchService";
 import api from "../services/api";
+import { useBuilding } from "../contexts/BuildingContext";
 
-type Props = NativeStackScreenProps<MonthlyStackParamList, "PendingRooms">;
+type Props = NativeStackScreenProps<RootStackParamList, "PendingRooms">;
 
 interface PaymentModalData {
   room: MatchRoom;
@@ -30,6 +31,7 @@ interface PaymentModalData {
 
 const PendingRoomsScreen: React.FC<Props> = ({ route }) => {
   const { period } = route.params;
+  const { selectedBuilding } = useBuilding();
   const [loading, setLoading] = useState(true);
   const [unpaidRooms, setUnpaidRooms] = useState<MatchRoom[]>([]);
   const [processingPayment, setProcessingPayment] = useState<string | null>(
@@ -39,14 +41,21 @@ const PendingRoomsScreen: React.FC<Props> = ({ route }) => {
   const [paymentData, setPaymentData] = useState<PaymentModalData | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, [period]);
+    if (selectedBuilding?.id) {
+      loadData();
+    }
+  }, [period, selectedBuilding]);
 
   const loadData = async () => {
+    if (!selectedBuilding?.id) return;
     try {
       console.log("Loading data for period:", period);
+      console.log("Building ID:", selectedBuilding.id);
       setLoading(true);
-      const rooms = await matchService.getUnpaidRooms(period);
+      const rooms = await matchService.getUnpaidRooms(
+        selectedBuilding.id,
+        period
+      );
       console.log("Raw API response:", rooms);
       console.log("Is array?", Array.isArray(rooms));
       console.log("Array length:", Array.isArray(rooms) ? rooms.length : 0);
@@ -109,6 +118,15 @@ const PendingRoomsScreen: React.FC<Props> = ({ route }) => {
         return;
       }
 
+      if (!selectedBuilding?.id) {
+        console.error("No building selected");
+        Alert.alert(
+          "Error",
+          "No building selected. Please select a building first."
+        );
+        return;
+      }
+
       const requestData = {
         roomName: paymentData.room.roomName,
         phone: paymentData.room.phone,
@@ -122,7 +140,7 @@ const PendingRoomsScreen: React.FC<Props> = ({ route }) => {
       );
 
       const response = await api.post(
-        `/matches/manual-pay?roomName=${paymentData.room.roomName}&phone=${paymentData.room.phone}&period=${period}`,
+        `/buildings/${selectedBuilding.id}/matches/manual-pay?roomName=${paymentData.room.roomName}&phone=${paymentData.room.phone}&period=${period}`,
         {
           amount: amount,
           description: paymentData.description,

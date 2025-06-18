@@ -13,15 +13,16 @@ import {
   Platform,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { MonthlyStackParamList } from "../navigation/AppNavigator";
+import { RootStackParamList } from "../navigation/AppNavigator";
 import Card from "../components/Card";
 import { Feather } from "@expo/vector-icons";
 import theme from "../constants/theme";
 import { format, parse } from "date-fns";
 import matchService, { MatchRoom } from "../services/matchService";
 import api from "../services/api";
+import { useBuilding } from "../contexts/BuildingContext";
 
-type Props = NativeStackScreenProps<MonthlyStackParamList, "MonthlyDetails">;
+type Props = NativeStackScreenProps<RootStackParamList, "MonthlyDetails">;
 
 interface PaymentModalData {
   room: MatchRoom;
@@ -31,6 +32,7 @@ interface PaymentModalData {
 
 const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const { period } = route.params;
+  const { selectedBuilding } = useBuilding();
   const [paidRooms, setPaidRooms] = useState<MatchRoom[]>([]);
   const [unpaidRooms, setUnpaidRooms] = useState<MatchRoom[]>([]);
   const [processingPayment, setProcessingPayment] = useState<string | null>(
@@ -40,14 +42,17 @@ const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [paymentData, setPaymentData] = useState<PaymentModalData | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, [period]);
+    if (selectedBuilding?.id) {
+      loadData();
+    }
+  }, [period, selectedBuilding]);
 
   const loadData = async () => {
+    if (!selectedBuilding?.id) return;
     try {
       const [paid, unpaid] = await Promise.all([
-        matchService.getPaidRooms(period),
-        matchService.getUnpaidRooms(period),
+        matchService.getPaidRooms(selectedBuilding.id, period),
+        matchService.getUnpaidRooms(selectedBuilding.id, period),
       ]);
       setPaidRooms(Array.isArray(paid) ? paid : []);
       setUnpaidRooms(Array.isArray(unpaid) ? unpaid : []);
@@ -95,6 +100,15 @@ const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
         return;
       }
 
+      if (!selectedBuilding?.id) {
+        console.error("No building selected");
+        Alert.alert(
+          "Error",
+          "No building selected. Please select a building first."
+        );
+        return;
+      }
+
       const amount = parseFloat(paymentData.amount);
       if (isNaN(amount) || amount <= 0) {
         console.error("Invalid amount:", paymentData.amount);
@@ -112,7 +126,7 @@ const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
       console.log("Sending payment request with data:", requestData);
 
       const response = await api.post(
-        `/matches/manual-pay?roomName=${paymentData.room.roomName}&phone=${paymentData.room.phone}&period=${period}`,
+        `/buildings/${selectedBuilding.id}/matches/manual-pay?roomName=${paymentData.room.roomName}&phone=${paymentData.room.phone}&period=${period}`,
         {
           amount: amount,
           description: paymentData.description,
@@ -175,7 +189,7 @@ const MonthlyDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={styles.roomInfo}>
+              <Text style={styles.modalRoomInfo}>
                 Room: {paymentData.room.roomName}
               </Text>
               <Text style={styles.tenantInfo}>
@@ -531,7 +545,7 @@ const styles = StyleSheet.create({
   modalBody: {
     marginBottom: theme.spacing.lg,
   },
-  roomInfo: {
+  modalRoomInfo: {
     fontSize: theme.typography.sizes.lg,
     fontWeight: "600",
     color: theme.colors.text.primary,

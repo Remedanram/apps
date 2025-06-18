@@ -11,24 +11,32 @@ import { Feather } from "@expo/vector-icons";
 import Card from "../components/Card";
 import theme from "../constants/theme";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { MonthlyStackParamList } from "../navigation/AppNavigator";
+import { RootStackParamList } from "../navigation/AppNavigator";
 import matchService, { MatchRoom } from "../services/matchService";
+import { useBuilding } from "../contexts/BuildingContext";
 
-type Props = NativeStackScreenProps<MonthlyStackParamList, "PaidRooms">;
+type Props = NativeStackScreenProps<RootStackParamList, "PaidRooms">;
 
 const PaidRoomsScreen: React.FC<Props> = ({ route }) => {
   const { period } = route.params;
+  const { selectedBuilding } = useBuilding();
   const [loading, setLoading] = useState(true);
   const [paidRooms, setPaidRooms] = useState<MatchRoom[]>([]);
 
   useEffect(() => {
-    loadData();
-  }, [period]);
+    if (selectedBuilding?.id) {
+      loadData();
+    }
+  }, [period, selectedBuilding]);
 
   const loadData = async () => {
+    if (!selectedBuilding?.id) return;
     try {
       setLoading(true);
-      const rooms = await matchService.getPaidRooms(period);
+      const rooms = await matchService.getPaidRooms(
+        selectedBuilding.id,
+        period
+      );
       setPaidRooms(Array.isArray(rooms) ? rooms : []);
     } catch (error) {
       console.error("Error loading paid rooms:", error);
@@ -48,7 +56,10 @@ const PaidRoomsScreen: React.FC<Props> = ({ route }) => {
         <View style={styles.amountContainer}>
           <Text style={styles.amount}>${item.amount}</Text>
           <Text style={styles.paymentDate}>
-            Paid: {new Date(item.day).toLocaleDateString()}
+            Paid:{" "}
+            {item.day
+              ? new Date(item.day).toLocaleDateString()
+              : "Date not set"}
           </Text>
         </View>
       </View>

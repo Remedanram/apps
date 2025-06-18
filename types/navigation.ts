@@ -6,6 +6,7 @@ export type RootStackParamList = {
   Auth: undefined;
   BuildingSelection: undefined;
   Main: undefined;
+  MonthlyHome: undefined;
   TenantLedger: { phoneNumber: string };
   TransactionsList: { status: string };
   RoomList: undefined;
@@ -15,9 +16,9 @@ export type RootStackParamList = {
   EditRoom: { room: Room };
   EditTenant: { tenant: Tenant };
   Dashboard: undefined;
-  PaidRooms: undefined;
-  PendingRooms: undefined;
-  MonthlyDetails: { month: string };
+  PaidRooms: { period: string };
+  PendingRooms: { period: string };
+  MonthlyDetails: { period: string };
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

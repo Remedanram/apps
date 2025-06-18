@@ -16,14 +16,14 @@ import { format, getYear } from "date-fns";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import matchService, { MatchRoom } from "../services/matchService";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useBuilding } from "../contexts/BuildingContext";
 
 type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, "MonthlyHome">;
+  navigation: NativeStackNavigationProp<RootStackParamList, "Monthly">;
 };
 
 const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
-  const [buildingId, setBuildingId] = useState<string | null>(null);
+  const { selectedBuilding } = useBuilding();
   const [refreshing, setRefreshing] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -34,30 +34,21 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadBuildingId();
-  }, []);
-
-  const loadBuildingId = async () => {
-    try {
-      const storedBuildingId = await AsyncStorage.getItem("selectedBuildingId");
-      setBuildingId(storedBuildingId);
-    } catch (error) {
-      console.error("Error loading building ID:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (buildingId) {
+    if (selectedBuilding?.id) {
+      setLoading(false);
       loadYears();
+    } else {
+      setLoading(true);
     }
-  }, [buildingId]);
+  }, [selectedBuilding]);
 
   const loadYears = async () => {
-    if (!buildingId) return;
+    if (!selectedBuilding?.id) return;
     try {
-      const years = await matchService.getAvailableYears(buildingId);
+      const years = await matchService.getAvailableYears(selectedBuilding.id);
       setAvailableYears(Array.isArray(years) ? years : []);
     } catch (error) {
       console.error("Error loading years:", error);
@@ -66,17 +57,17 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const loadData = async () => {
-    if (!buildingId) return;
+    if (!selectedBuilding?.id) return;
     try {
       const period = format(selectedDate, "yyyy-MM");
 
       const [paid, unpaid, paidCountData, unpaidCountData, revenue] =
         await Promise.all([
-          matchService.getPaidRooms(buildingId, period),
-          matchService.getUnpaidRooms(buildingId, period),
-          matchService.getPaidCount(buildingId, period),
-          matchService.getUnpaidCount(buildingId, period),
-          matchService.getTotalRevenue(buildingId, period),
+          matchService.getPaidRooms(selectedBuilding.id, period),
+          matchService.getUnpaidRooms(selectedBuilding.id, period),
+          matchService.getPaidCount(selectedBuilding.id, period),
+          matchService.getUnpaidCount(selectedBuilding.id, period),
+          matchService.getTotalRevenue(selectedBuilding.id, period),
         ]);
 
       setPaidRooms(Array.isArray(paid) ? paid : []);
@@ -95,14 +86,14 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    if (buildingId) {
+    if (selectedBuilding?.id) {
       loadData();
     }
-  }, [selectedDate, buildingId]);
+  }, [selectedDate, selectedBuilding]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([loadBuildingId(), loadData(), loadYears()]);
+    await Promise.all([loadData(), loadYears()]);
     setRefreshing(false);
   };
 
@@ -150,115 +141,148 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {/* Month and Year Selector */}
-      <View style={styles.dateSelectorContainer}>
-        <TouchableOpacity
-          style={styles.dateSelector}
-          onPress={() => setShowMonthPicker(true)}
-        >
-          <Text style={styles.dateText}>{format(selectedDate, "MMMM")}</Text>
-          <Feather name="calendar" size={24} color={theme.colors.primary} />
-        </TouchableOpacity>
+      {/* Building Selection Check */}
+      {!selectedBuilding?.id ? (
+        <Card style={styles.summaryCard}>
+          <Text style={styles.cardTitle}>No Building Selected</Text>
+          <Text style={styles.noDataText}>
+            Please select a building from the building selection screen to view
+            monthly data.
+          </Text>
+          <TouchableOpacity
+            style={styles.selectBuildingButton}
+            onPress={() => navigation.navigate("BuildingSelection")}
+          >
+            <Text style={styles.selectBuildingButtonText}>Select Building</Text>
+          </TouchableOpacity>
+        </Card>
+      ) : (
+        <>
+          {/* Month and Year Selector */}
+          <View style={styles.dateSelectorContainer}>
+            <TouchableOpacity
+              style={styles.dateSelector}
+              onPress={() => setShowMonthPicker(true)}
+            >
+              <Text style={styles.dateText}>
+                {format(selectedDate, "MMMM")}
+              </Text>
+              <Feather name="calendar" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.dateSelector}
-          onPress={() => setShowYearPicker(true)}
-        >
-          <Text style={styles.dateText}>{format(selectedDate, "yyyy")}</Text>
-          <Feather name="calendar" size={24} color={theme.colors.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Summary Card */}
-      <Card style={styles.summaryCard}>
-        <Text style={styles.cardTitle}>Monthly Summary</Text>
-        <View style={styles.statsGrid}>
-          <View style={styles.statItem}>
-            <Feather
-              name="dollar-sign"
-              size={24}
-              color={theme.colors.success}
-            />
-            <Text style={styles.statValue}>${totalRevenue}</Text>
-            <Text style={styles.statLabel}>Total Revenue</Text>
+            <TouchableOpacity
+              style={styles.dateSelector}
+              onPress={() => setShowYearPicker(true)}
+            >
+              <Text style={styles.dateText}>
+                {format(selectedDate, "yyyy")}
+              </Text>
+              <Feather name="calendar" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={styles.statItem}
-            onPress={() =>
-              navigation.navigate("PaidRooms", {
-                period: format(selectedDate, "yyyy-MM"),
-              })
-            }
-          >
-            <Feather
-              name="check-circle"
-              size={24}
-              color={theme.colors.success}
-            />
-            <Text style={[styles.statValue, { color: theme.colors.success }]}>
-              {paidCount}
-            </Text>
-            <Text style={styles.statLabel}>Paid Rooms</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.statItem}
-            onPress={() =>
-              navigation.navigate("PendingRooms", {
-                period: format(selectedDate, "yyyy-MM"),
-              })
-            }
-          >
-            <Feather name="clock" size={24} color={theme.colors.warning} />
-            <Text style={[styles.statValue, { color: theme.colors.warning }]}>
-              {unpaidCount}
-            </Text>
-            <Text style={styles.statLabel}>Pending</Text>
-          </TouchableOpacity>
-
-          <View style={styles.statItem}>
-            <Feather name="percent" size={24} color={theme.colors.info} />
-            <Text style={styles.statValue}>
-              {calculateOccupancyRate().toFixed(1)}%
-            </Text>
-            <Text style={styles.statLabel}>Occupancy</Text>
-          </View>
-        </View>
-      </Card>
-
-      {/* Monthly Transactions */}
-      <Card style={styles.transactionsCard}>
-        <Text style={styles.cardTitle}>Monthly Transactions</Text>
-        {paidRooms.length > 0 ? (
-          paidRooms.map((room) => (
-            <View key={room.roomName} style={styles.transactionItem}>
-              <View>
-                <Text style={styles.transactionRoom}>{room.roomName}</Text>
-                <Text style={styles.transactionTenant}>{room.tenantName}</Text>
-                <Text style={styles.statusText}>
-                  Status: {room.status.replace(/_/g, " ")}
-                </Text>
+          {/* Summary Card */}
+          <Card style={styles.summaryCard}>
+            <Text style={styles.cardTitle}>Monthly Summary</Text>
+            <View style={styles.statsGrid}>
+              <View style={styles.statItem}>
+                <Feather
+                  name="dollar-sign"
+                  size={24}
+                  color={theme.colors.success}
+                />
+                <Text style={styles.statValue}>${totalRevenue}</Text>
+                <Text style={styles.statLabel}>Total Revenue</Text>
               </View>
-              <View>
+
+              <TouchableOpacity
+                style={styles.statItem}
+                onPress={() =>
+                  navigation.navigate("PaidRooms", {
+                    period: format(selectedDate, "yyyy-MM"),
+                  })
+                }
+              >
+                <Feather
+                  name="check-circle"
+                  size={24}
+                  color={theme.colors.success}
+                />
                 <Text
-                  style={[
-                    styles.transactionAmount,
-                    { color: theme.colors.success },
-                  ]}
+                  style={[styles.statValue, { color: theme.colors.success }]}
                 >
-                  +${room.amount}
+                  {paidCount}
                 </Text>
-                <Text style={styles.transactionDate}>
-                  {new Date(room.day).toLocaleDateString()}
+                <Text style={styles.statLabel}>Paid Rooms</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.statItem}
+                onPress={() =>
+                  navigation.navigate("PendingRooms", {
+                    period: format(selectedDate, "yyyy-MM"),
+                  })
+                }
+              >
+                <Feather name="clock" size={24} color={theme.colors.warning} />
+                <Text
+                  style={[styles.statValue, { color: theme.colors.warning }]}
+                >
+                  {unpaidCount}
                 </Text>
+                <Text style={styles.statLabel}>Pending</Text>
+              </TouchableOpacity>
+
+              <View style={styles.statItem}>
+                <Feather name="percent" size={24} color={theme.colors.info} />
+                <Text style={styles.statValue}>
+                  {calculateOccupancyRate().toFixed(1)}%
+                </Text>
+                <Text style={styles.statLabel}>Occupancy</Text>
               </View>
             </View>
-          ))
-        ) : (
-          <Text style={styles.noDataText}>No transactions for this month</Text>
-        )}
-      </Card>
+          </Card>
+
+          {/* Monthly Transactions */}
+          <Card style={styles.transactionsCard}>
+            <Text style={styles.cardTitle}>Monthly Transactions</Text>
+            {paidRooms.length > 0 ? (
+              paidRooms.map((room) => (
+                <View key={room.roomName} style={styles.transactionItem}>
+                  <View>
+                    <Text style={styles.transactionRoom}>{room.roomName}</Text>
+                    <Text style={styles.transactionTenant}>
+                      {room.tenantName}
+                    </Text>
+                    <Text style={styles.statusText}>
+                      Status: {room.status.replace(/_/g, " ")}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text
+                      style={[
+                        styles.transactionAmount,
+                        { color: theme.colors.success },
+                      ]}
+                    >
+                      +${room.amount}
+                    </Text>
+                    <Text style={styles.transactionDate}>
+                      {room.day
+                        ? new Date(room.day).toLocaleDateString()
+                        : "Date not set"}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noDataText}>
+                No transactions for this month
+              </Text>
+            )}
+          </Card>
+        </>
+      )}
 
       {/* Month Picker Modal */}
       <Modal
@@ -479,6 +503,17 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     fontSize: theme.typography.sizes.md,
     padding: theme.spacing.md,
+  },
+  selectBuildingButton: {
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    alignItems: "center",
+  },
+  selectBuildingButtonText: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: "600",
+    color: theme.colors.background,
   },
 });
 
