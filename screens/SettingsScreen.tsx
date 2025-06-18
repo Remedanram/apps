@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -13,7 +20,7 @@ const SettingsScreen = () => {
   const handleLogout = async () => {
     Alert.alert(
       "Logout",
-      "Are you sure you want to logout?",
+      "Are you sure you want to logout? You will need to login again.",
       [
         {
           text: "Cancel",
@@ -23,12 +30,26 @@ const SettingsScreen = () => {
           text: "Logout",
           style: "destructive",
           onPress: async () => {
-            await AsyncStorage.removeItem("userToken");
-            await AsyncStorage.removeItem("userData");
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "Auth" as never }],
-            });
+            try {
+              // Clear all stored data
+              await AsyncStorage.removeItem("userToken");
+              await AsyncStorage.removeItem("userData");
+              await AsyncStorage.removeItem("selectedBuildingId");
+              await AsyncStorage.removeItem("selectedBuildingName");
+
+              // Navigate to login screen
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Auth" as never }],
+              });
+            } catch (error) {
+              console.error("Error during logout:", error);
+              // Still navigate to login even if clearing storage fails
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Auth" as never }],
+              });
+            }
           },
         },
       ],
@@ -40,16 +61,35 @@ const SettingsScreen = () => {
     icon: keyof typeof Feather.glyphMap,
     title: string,
     onPress: () => void,
-    showBadge?: boolean
+    showBadge?: boolean,
+    isDestructive?: boolean
   ) => (
     <TouchableOpacity onPress={onPress}>
       <Card variant="outlined" style={styles.settingCard}>
         <View style={styles.settingContent}>
           <View style={styles.settingLeft}>
-            <View style={styles.iconContainer}>
-              <Feather name={icon} size={20} color={theme.colors.primary} />
+            <View
+              style={[
+                styles.iconContainer,
+                isDestructive && styles.destructiveIconContainer,
+              ]}
+            >
+              <Feather
+                name={icon}
+                size={20}
+                color={
+                  isDestructive ? theme.colors.danger : theme.colors.primary
+                }
+              />
             </View>
-            <Text style={styles.settingTitle}>{title}</Text>
+            <Text
+              style={[
+                styles.settingTitle,
+                isDestructive && styles.destructiveText,
+              ]}
+            >
+              {title}
+            </Text>
           </View>
           <Feather
             name="chevron-right"
@@ -67,7 +107,7 @@ const SettingsScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         {renderSettingItem("user", "Profile Settings", () =>
@@ -80,24 +120,20 @@ const SettingsScreen = () => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Preferences</Text>
-        {renderSettingItem("globe", "Language", () => {})}
-        {renderSettingItem("moon", "Dark Mode", () => {})}
-        {renderSettingItem("dollar-sign", "Currency", () => {})}
-      </View>
-
-      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Support</Text>
         {renderSettingItem("help-circle", "Help Center", () => {})}
         {renderSettingItem("mail", "Contact Us", () => {})}
         {renderSettingItem("info", "About", () => {})}
       </View>
 
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-        <Feather name="log-out" size={20} color={theme.colors.danger} />
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Security</Text>
+        {renderSettingItem("log-out", "Logout", handleLogout, false, true)}
+      </View>
+
+      {/* Add some bottom padding to ensure logout button is visible */}
+      <View style={styles.bottomPadding} />
+    </ScrollView>
   );
 };
 
@@ -156,20 +192,14 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.xs,
     fontWeight: "500",
   },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: theme.spacing.md,
+  destructiveIconContainer: {
     backgroundColor: theme.colors.danger + "10",
-    borderRadius: theme.borderRadius.md,
-    marginTop: "auto",
   },
-  logoutText: {
-    marginLeft: theme.spacing.sm,
-    fontSize: theme.typography.sizes.md,
-    fontWeight: "600",
+  destructiveText: {
     color: theme.colors.danger,
+  },
+  bottomPadding: {
+    height: theme.spacing.xl,
   },
 });
 
