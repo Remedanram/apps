@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { Room } from "../types/room";
 import { Tenant } from "../types/tenant";
+import { UserProfile } from "../types/userProfile";
 
 // Screens
 import DashboardScreen from "../screens/DashboardScreen";
@@ -25,6 +26,8 @@ import MonthlyDetailsScreen from "../screens/MonthlyDetailsScreen";
 import EditRoomScreen from "../screens/EditRoomScreen";
 import EditTenantScreen from "../screens/EditTenantScreen";
 import BuildingSelectionScreen from "../screens/BuildingSelectionScreen";
+import ProfileScreen from "../screens/ProfileScreen";
+import EditProfileScreen from "../screens/EditProfileScreen";
 
 // Types
 export type RootStackParamList = {
@@ -45,6 +48,8 @@ export type RootStackParamList = {
   PaidRooms: { period: string };
   PendingRooms: { period: string };
   MonthlyDetails: { period: string };
+  Profile: undefined;
+  EditProfile: { profile: UserProfile };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -130,6 +135,8 @@ const AppNavigator = () => {
         <Stack.Screen name="PaidRooms" component={PaidRoomsScreen} />
         <Stack.Screen name="PendingRooms" component={PendingRoomsScreen} />
         <Stack.Screen name="MonthlyDetails" component={MonthlyDetailsScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

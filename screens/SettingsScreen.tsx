@@ -3,11 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
+import { NavigationProp } from "../types/navigation";
 import Card from "../components/Card";
 import theme from "../constants/theme";
 
 const SettingsScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
 
   const handleLogout = async () => {
     Alert.alert(
@@ -69,7 +70,9 @@ const SettingsScreen = () => {
     <View style={styles.container}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
-        {renderSettingItem("user", "Profile Settings", () => {})}
+        {renderSettingItem("user", "Profile Settings", () =>
+          navigation.navigate("Profile")
+        )}
         {renderSettingItem("bell", "Notifications", () => {}, true)}
         {renderSettingItem("lock", "Security", () => {})}
       </View>

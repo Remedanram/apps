@@ -20,6 +20,30 @@ export interface AuthResponse {
   };
 }
 
+// Profile management functions
+export const getProfile = async () => {
+  try {
+    const response = await api.get("/auth/me");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    throw error;
+  }
+};
+
+export const updateProfile = async (
+  userId: string,
+  profileData: { name: string; email: string }
+) => {
+  try {
+    const response = await api.put(`/auth/edit/${userId}`, profileData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    throw error;
+  }
+};
+
 const authService = {
   // Signup new user
   signup: async (data: SignupRequest): Promise<AuthResponse> => {

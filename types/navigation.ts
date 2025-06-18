@@ -1,6 +1,7 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Room } from "./room";
 import { Tenant } from "./tenant";
+import { UserProfile } from "./userProfile";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -19,6 +20,8 @@ export type RootStackParamList = {
   PaidRooms: { period: string };
   PendingRooms: { period: string };
   MonthlyDetails: { period: string };
+  Profile: undefined;
+  EditProfile: { profile: UserProfile };
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
