@@ -176,7 +176,7 @@ const BuildingSelectionScreen: React.FC<Props> = ({ navigation }) => {
       </Text>
       <Text style={styles.noBuildingsSubtext}>
         {isNewUser
-          ? "This will be your first property to manage"
+          ? "Create your first building to get started"
           : "Create your first building to get started"}
       </Text>
     </View>
