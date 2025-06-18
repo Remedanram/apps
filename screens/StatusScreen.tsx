@@ -19,10 +19,11 @@ import roomService from "../services/roomService";
 import api from "../services/api";
 import type { RoomStats } from "../types/room";
 import matchService from "../services/matchService";
+import { useBuilding } from "../contexts/BuildingContext";
 
 // Define the type for the payment status data based on the API response
 interface MonthStatus {
-  month: string;
+  monthAbbrev: string;
   status: "PAID" | "PENDING";
 }
 
@@ -33,6 +34,7 @@ interface RoomPaymentStatus {
 }
 
 const StatusScreen = () => {
+  const { selectedBuilding } = useBuilding();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [paymentStatusData, setPaymentStatusData] = useState<
@@ -45,16 +47,21 @@ const StatusScreen = () => {
   const [showYearPicker, setShowYearPicker] = useState(false);
 
   useEffect(() => {
-    fetchAvailableYears();
-  }, []);
+    if (selectedBuilding?.id) {
+      fetchAvailableYears();
+    }
+  }, [selectedBuilding]);
 
   useEffect(() => {
-    fetchPaymentStatus(selectedYear);
-  }, [selectedYear]);
+    if (selectedBuilding?.id) {
+      fetchPaymentStatus(selectedYear);
+    }
+  }, [selectedYear, selectedBuilding]);
 
   const fetchAvailableYears = async () => {
+    if (!selectedBuilding?.id) return;
     try {
-      const years = await matchService.getAvailableYears();
+      const years = await matchService.getAvailableYears(selectedBuilding.id);
       setAvailableYears(Array.isArray(years) ? years : []);
       if (Array.isArray(years) && years.length > 0) {
         setSelectedYear(years[years.length - 1]);
@@ -65,10 +72,14 @@ const StatusScreen = () => {
   };
 
   const fetchPaymentStatus = async (year: number) => {
+    if (!selectedBuilding?.id) return;
     setLoadingData(true);
     setError(null);
     try {
-      const response = await api.get(`/matches/payment-status?year=${year}`);
+      const response = await api.get(
+        `/buildings/${selectedBuilding.id}/matches/payment-status?year=${year}`
+      );
+
       if (response.data) {
         const sortedData = (response.data as RoomPaymentStatus[]).sort(
           (a, b) => {
@@ -77,6 +88,7 @@ const StatusScreen = () => {
             return roomNumA - roomNumB;
           }
         );
+
         setPaymentStatusData(sortedData);
       } else {
         setPaymentStatusData([]);
@@ -102,6 +114,14 @@ const StatusScreen = () => {
 
   // Handle export button press with confirmation
   const handleExport = async () => {
+    if (!selectedBuilding?.id) {
+      Alert.alert(
+        "Error",
+        "No building selected. Please select a building first."
+      );
+      return;
+    }
+
     // Show confirmation alert
     Alert.alert(
       "Confirm Export",
@@ -111,7 +131,9 @@ const StatusScreen = () => {
         {
           text: "Yes",
           onPress: async () => {
-            const exportUrl = `${api.getBaseUrl()}/matches/payment-status/export?year=${selectedYear}&format=excel`;
+            const exportUrl = `${api.getBaseUrl()}/buildings/${
+              selectedBuilding.id
+            }/matches/payment-status/export?year=${selectedYear}&format=excel`;
             try {
               const supported = await Linking.canOpenURL(exportUrl);
               if (supported) {
@@ -210,8 +232,11 @@ const StatusScreen = () => {
               "NOV",
               "DEC",
             ].map((monthAbbr) => {
-              const monthData = room.months.find((m) => m.month === monthAbbr);
+              const monthData = room.months.find(
+                (m) => m.monthAbbrev === monthAbbr
+              );
               const status = monthData ? monthData.status : "PENDING";
+
               return (
                 <View key={monthAbbr} style={styles.cell}>
                   {renderStatusCell(status)}
@@ -231,46 +256,57 @@ const StatusScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <Card style={styles.tableCard}>
-        <View style={styles.tableHeaderContainer}>
-          <Text style={styles.cardTitle}>Payment Status</Text>
-          <View style={styles.tableHeaderButtons}>
-            <TouchableOpacity
-              style={styles.yearButton}
-              onPress={() => setShowYearPicker(true)}
-            >
-              <Text style={styles.yearButtonText}>{selectedYear} ▼</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.exportButton}
-              onPress={handleExport}
-            >
-              <Text style={styles.exportButtonText}>Export</Text>
-            </TouchableOpacity>
+      {/* Building Selection Check */}
+      {!selectedBuilding?.id ? (
+        <Card style={styles.tableCard}>
+          <Text style={styles.cardTitle}>No Building Selected</Text>
+          <Text style={styles.noDataText}>
+            Please select a building from the building selection screen to view
+            payment status.
+          </Text>
+        </Card>
+      ) : (
+        <Card style={styles.tableCard}>
+          <View style={styles.tableHeaderContainer}>
+            <Text style={styles.cardTitle}>Payment Status</Text>
+            <View style={styles.tableHeaderButtons}>
+              <TouchableOpacity
+                style={styles.yearButton}
+                onPress={() => setShowYearPicker(true)}
+              >
+                <Text style={styles.yearButtonText}>{selectedYear} ▼</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.exportButton}
+                onPress={handleExport}
+              >
+                <Text style={styles.exportButtonText}>Export</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-        {loadingData ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Loading payment status...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : paymentStatusData.length === 0 && !loadingData ? (
-          <View style={styles.noDataContainer}>
-            <Text style={styles.noDataText}>
-              No payment status data available for {selectedYear}.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.tableWrapper}>
-            {renderStickyRoomColumn()}
-            {renderScrollableContent()}
-          </View>
-        )}
-      </Card>
+          {loadingData ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text style={styles.loadingText}>Loading payment status...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : paymentStatusData.length === 0 && !loadingData ? (
+            <View style={styles.noDataContainer}>
+              <Text style={styles.noDataText}>
+                No payment status data available for {selectedYear}.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.tableWrapper}>
+              {renderStickyRoomColumn()}
+              {renderScrollableContent()}
+            </View>
+          )}
+        </Card>
+      )}
       <Modal
         visible={showYearPicker}
         transparent
