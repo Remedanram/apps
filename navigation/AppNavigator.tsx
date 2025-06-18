@@ -28,6 +28,7 @@ import EditTenantScreen from "../screens/EditTenantScreen";
 import BuildingSelectionScreen from "../screens/BuildingSelectionScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
+import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 
 // Types
 export type RootStackParamList = {
@@ -50,6 +51,7 @@ export type RootStackParamList = {
   MonthlyDetails: { period: string };
   Profile: undefined;
   EditProfile: { profile: UserProfile };
+  ChangePassword: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -137,6 +139,7 @@ const AppNavigator = () => {
         <Stack.Screen name="MonthlyDetails" component={MonthlyDetailsScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -22,6 +22,7 @@ export type RootStackParamList = {
   MonthlyDetails: { period: string };
   Profile: undefined;
   EditProfile: { profile: UserProfile };
+  ChangePassword: undefined;
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

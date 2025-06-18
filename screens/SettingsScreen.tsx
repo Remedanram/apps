@@ -74,7 +74,9 @@ const SettingsScreen = () => {
           navigation.navigate("Profile")
         )}
         {renderSettingItem("bell", "Notifications", () => {}, true)}
-        {renderSettingItem("lock", "Security", () => {})}
+        {renderSettingItem("lock", "Security", () =>
+          navigation.navigate("ChangePassword")
+        )}
       </View>
 
       <View style={styles.section}>
