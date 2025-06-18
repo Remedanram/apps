@@ -191,6 +191,14 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleForgotPassword = () => {
+    Alert.alert(
+      "Coming Soon",
+      "Forgot Password feature will be available in a future update.",
+      [{ text: "OK" }]
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -268,6 +276,15 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               />
             </TouchableOpacity>
           </View>
+
+          {isLogin && (
+            <TouchableOpacity
+              style={styles.forgotPasswordButton}
+              onPress={handleForgotPassword}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -369,6 +386,16 @@ const styles = StyleSheet.create({
   switchButtonText: {
     color: theme.colors.primary,
     fontSize: theme.typography.sizes.md,
+  },
+  forgotPasswordButton: {
+    alignSelf: "flex-end",
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
+  },
+  forgotPasswordText: {
+    color: theme.colors.primary,
+    fontSize: theme.typography.sizes.sm,
+    textDecorationLine: "underline",
   },
 });
 

@@ -57,6 +57,14 @@ const SettingsScreen = () => {
     );
   };
 
+  const handleComingSoon = (feature: string) => {
+    Alert.alert(
+      "Coming Soon",
+      `${feature} feature will be available in a future update.`,
+      [{ text: "OK" }]
+    );
+  };
+
   const renderSettingItem = (
     icon: keyof typeof Feather.glyphMap,
     title: string,
@@ -113,7 +121,6 @@ const SettingsScreen = () => {
         {renderSettingItem("user", "Profile Settings", () =>
           navigation.navigate("Profile")
         )}
-        {renderSettingItem("bell", "Notifications", () => {}, true)}
         {renderSettingItem("lock", "Security", () =>
           navigation.navigate("ChangePassword")
         )}
@@ -121,9 +128,13 @@ const SettingsScreen = () => {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Support</Text>
-        {renderSettingItem("help-circle", "Help Center", () => {})}
-        {renderSettingItem("mail", "Contact Us", () => {})}
-        {renderSettingItem("info", "About", () => {})}
+        {renderSettingItem("help-circle", "Help Center", () =>
+          handleComingSoon("Help Center")
+        )}
+        {renderSettingItem("mail", "Contact Us", () =>
+          handleComingSoon("Contact Us")
+        )}
+        {renderSettingItem("info", "About", () => handleComingSoon("About"))}
       </View>
 
       <View style={styles.section}>
