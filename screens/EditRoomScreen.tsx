@@ -14,6 +14,7 @@ import { RootStackParamList } from "../types/navigation";
 import { Room } from "../types/room";
 import roomService from "../services/roomService";
 import theme from "../constants/theme";
+import { useBuilding } from "../contexts/BuildingContext";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "EditRoom">;
@@ -24,6 +25,7 @@ const EditRoomScreen: React.FC<Props> = () => {
   const navigation = useNavigation<Props["navigation"]>();
   const route = useRoute<Props["route"]>();
   const { room } = route.params;
+  const { selectedBuilding } = useBuilding();
 
   const [roomName, setRoomName] = useState(room.roomName);
   const [description, setDescription] = useState(room.description || "");
@@ -37,21 +39,53 @@ const EditRoomScreen: React.FC<Props> = () => {
       return;
     }
 
+    if (!selectedBuilding?.id) {
+      Alert.alert("Error", "No building selected");
+      return;
+    }
+
     try {
       setLoading(true);
-      const updatedRoom: Partial<Room> = {
+
+      const updatedRoom = {
         roomName,
-        description,
         rentAmount: parseFloat(rentAmount),
-        active,
+        description: description || "",
+        buildingId: selectedBuilding.id,
       };
 
-      await roomService.updateRoom(room.roomName, updatedRoom);
+      console.log("Submitting room update:", {
+        roomName: room.roomName,
+        updatedRoom,
+      });
+
+      await roomService.updateRoom(
+        selectedBuilding.id,
+        String(room.id),
+        updatedRoom
+      );
+
       Alert.alert("Success", "Room updated successfully");
       navigation.goBack();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating room:", error);
-      Alert.alert("Error", "Failed to update room");
+      const backendError =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update room";
+      if (
+        error.response?.status === 409 &&
+        backendError.includes("Room name already exists")
+      ) {
+        Alert.alert(
+          "Room Name Exists",
+          "A room with this name already exists in this building. Please choose a different name.",
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert("Error", backendError);
+      }
     } finally {
       setLoading(false);
     }

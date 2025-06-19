@@ -139,40 +139,40 @@ const roomService = {
   // Update a room
   updateRoom: async (
     buildingId: string,
-    roomName: string,
-    roomData: Partial<Room>
+    roomId: string,
+    roomData: {
+      roomName: string;
+      rentAmount: number;
+      description: string;
+      buildingId: string;
+    }
   ): Promise<Room> => {
     try {
       const updateData = {
         roomName: roomData.roomName,
         rentAmount: roomData.rentAmount,
         description: roomData.description,
-        active: roomData.active,
+        buildingId: roomData.buildingId,
       };
-
       const response = await api.put(
-        `/buildings/${buildingId}/rooms/${roomName}`,
+        `/buildings/${buildingId}/rooms/${roomId}`,
         updateData
       );
-      console.log("updateRoom response:", response);
       if (response?.data) {
         return response.data;
       }
       throw new Error("Failed to update room");
     } catch (error) {
-      console.error("Error in updateRoom:", error);
       throw error;
     }
   },
 
   // Delete a room
-  deleteRoom: async (buildingId: string, roomName: string): Promise<string> => {
+  deleteRoom: async (buildingId: string, roomId: string): Promise<string> => {
     try {
-      await api.delete(`/buildings/${buildingId}/rooms/${roomName}`);
-      // If we get here, the deletion was successful (204 NO_CONTENT)
+      await api.delete(`/buildings/${buildingId}/rooms/${roomId}`);
       return "Room deleted successfully";
     } catch (error: any) {
-      // If the error has a response with a message, use that
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       }

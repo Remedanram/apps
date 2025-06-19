@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -33,27 +33,20 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
   const [retryCount, setRetryCount] = useState(0);
   const { selectedBuilding } = useBuilding();
 
-  const loadRooms = async () => {
+  const loadRooms = useCallback(async () => {
     try {
       setError(null);
       if (!selectedBuilding?.id) return;
+      setLoading(true);
       const response = await roomService.getAllRooms(selectedBuilding.id);
-      console.log("API Response:", response);
       setRooms(Array.isArray(response) ? response : []);
       setRetryCount(0); // Reset retry count on success
     } catch (error: any) {
-      console.error("Error details:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
-
       let errorMessage = "Failed to load rooms";
-
-      if (error.message.includes("timeout")) {
+      if (error.message?.includes("timeout")) {
         errorMessage =
           "Server is taking too long to respond. Please check your connection and try again.";
-      } else if (error.message.includes("Network request failed")) {
+      } else if (error.message?.includes("Network request failed")) {
         errorMessage =
           "Network connection error. Please check your internet connection.";
       } else {
@@ -62,7 +55,6 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
           error.message ||
           "Failed to load rooms";
       }
-
       setError(errorMessage);
       Alert.alert("Connection Error", errorMessage, [
         {
@@ -72,16 +64,23 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
             loadRooms();
           },
         },
-        {
-          text: "Test Connection",
-          onPress: testConnection,
-        },
       ]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [selectedBuilding?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedBuilding?.id) {
+        loadRooms();
+      } else {
+        Alert.alert("Error", "Please select a building first");
+        navigation.goBack();
+      }
+    }, [selectedBuilding?.id, loadRooms])
+  );
 
   const testConnection = async () => {
     try {
@@ -117,15 +116,6 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {
-    if (selectedBuilding?.id) {
-      loadRooms();
-    } else {
-      Alert.alert("Error", "Please select a building first");
-      navigation.goBack();
-    }
-  }, [selectedBuilding]);
-
   const handleRefresh = () => {
     setRefreshing(true);
     loadRooms();
@@ -135,7 +125,7 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("EditRoom", { room });
   };
 
-  const handleDeleteRoom = async (roomName: string) => {
+  const handleDeleteRoom = async (roomId: string) => {
     Alert.alert("Delete Room", "Are you sure you want to delete this room?", [
       {
         text: "Cancel",
@@ -147,11 +137,29 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
         onPress: async () => {
           try {
             if (!selectedBuilding?.id) return;
-            await roomService.deleteRoom(selectedBuilding.id, roomName);
+            await roomService.deleteRoom(selectedBuilding.id, roomId);
             loadRooms(); // Refresh the list
             Alert.alert("Success", "Room deleted successfully");
           } catch (error: any) {
-            Alert.alert("Error", error.message || "Failed to delete room");
+            const backendError =
+              error.response?.data?.error ||
+              error.response?.data?.message ||
+              error.message ||
+              "Failed to delete room";
+            if (
+              error.response?.status === 409 &&
+              backendError.includes(
+                "The room is occupied; you cannot delete it until it is vacant"
+              )
+            ) {
+              Alert.alert(
+                "Room Occupied",
+                "This room is currently occupied. Please deactivate the tenant first before deleting the room.",
+                [{ text: "OK" }]
+              );
+            } else {
+              Alert.alert("Error", backendError);
+            }
           }
         },
       },
@@ -211,7 +219,7 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => handleDeleteRoom(item.roomName)}
+          onPress={() => handleDeleteRoom(item.id!)}
         >
           <Feather name="trash-2" size={20} color={theme.colors.error} />
           <Text
@@ -222,18 +230,6 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
     </Card>
-  );
-
-  // Refresh data when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      if (selectedBuilding?.id) {
-        loadRooms();
-      } else {
-        Alert.alert("Error", "Please select a building first");
-        navigation.goBack();
-      }
-    }, [selectedBuilding?.id, loadRooms])
   );
 
   if (loading && !refreshing) {
