@@ -8,6 +8,10 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
+  Alert,
+  TextInput,
+  Button,
+  ActivityIndicator,
 } from "react-native";
 import Card from "../components/Card";
 import theme from "../constants/theme";
@@ -17,6 +21,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import matchService, { MatchRoom } from "../services/matchService";
 import { useBuilding } from "../contexts/BuildingContext";
+import tenantService, { DueAmountDetails } from "../services/tenantService";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "Monthly">;
@@ -35,6 +40,10 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isDueModalVisible, setIsDueModalVisible] = useState(false);
+  const [tenantCode, setTenantCode] = useState("");
+  const [dueDetails, setDueDetails] = useState<DueAmountDetails | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedBuilding?.id) {
@@ -134,6 +143,34 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
     "December",
   ];
 
+  const handleGetDueAmount = async () => {
+    if (!tenantCode) {
+      Alert.alert("Validation Error", "Please enter a Tenant Code.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setDueDetails(null);
+    try {
+      const data = await tenantService.getTenantDue(tenantCode);
+      setDueDetails(data);
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to fetch due amount. Please check the tenant code."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleModalClose = () => {
+    setIsDueModalVisible(false);
+    setTenantCode("");
+    setDueDetails(null);
+    setError(null);
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -141,10 +178,18 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
+      <View style={styles.headerActions}>
+        <TouchableOpacity
+          style={styles.dueButton}
+          onPress={() => setIsDueModalVisible(true)}
+        >
+          <Text style={styles.dueButtonText}>Get Due Amount</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Building Selection Check */}
       {!selectedBuilding?.id ? (
-        <Card style={styles.summaryCard}>
-          <Text style={styles.cardTitle}>No Building Selected</Text>
+        <View style={styles.fullScreenMessage}>
           <Text style={styles.noDataText}>
             Please select a building from the building selection screen to view
             monthly data.
@@ -155,7 +200,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
           >
             <Text style={styles.selectBuildingButtonText}>Select Building</Text>
           </TouchableOpacity>
-        </Card>
+        </View>
       ) : (
         <>
           {/* Month and Year Selector */}
@@ -366,6 +411,64 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isDueModalVisible}
+        onRequestClose={handleModalClose}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Get Due Amount</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Tenant Code"
+              value={tenantCode}
+              onChangeText={setTenantCode}
+              autoCapitalize="characters"
+            />
+            <Button
+              title="Get Details"
+              onPress={handleGetDueAmount}
+              disabled={loading}
+            />
+
+            {loading && <ActivityIndicator style={{ marginTop: 20 }} />}
+
+            {error && <Text style={styles.errorText}>{error}</Text>}
+
+            {dueDetails && (
+              <View style={styles.detailsContainer}>
+                <Text style={styles.detailText}>
+                  Name: {dueDetails.tenantName}
+                </Text>
+                <Text style={styles.detailText}>
+                  Room: {dueDetails.roomName}
+                </Text>
+                <Text style={styles.detailText}>
+                  Billing Month: {dueDetails.billingMonth}
+                </Text>
+                <Text style={styles.amountDue}>
+                  Amount Due: ${dueDetails.amountDue.toFixed(2)}
+                </Text>
+                <Text style={styles.detailText}>
+                  Next Billing Date:{" "}
+                  {new Date(dueDetails.nextBillingStart).toLocaleDateString()}
+                </Text>
+              </View>
+            )}
+
+            <View style={{ marginTop: 20 }}>
+              <Button
+                title="Close"
+                onPress={handleModalClose}
+                color={theme.colors.danger}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -375,6 +478,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
     padding: theme.spacing.md,
+  },
+  headerActions: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    alignItems: "flex-end",
+    marginHorizontal: -theme.spacing.md, // counteract parent padding
+    marginTop: -theme.spacing.sm,
+  },
+  dueButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.round,
+  },
+  dueButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: theme.typography.sizes.sm,
+  },
+  fullScreenMessage: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.spacing.lg,
   },
   dateSelectorContainer: {
     flexDirection: "row",
@@ -514,6 +641,42 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.md,
     fontWeight: "600",
     color: theme.colors.background,
+  },
+  input: {
+    width: "100%",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+    fontSize: theme.typography.sizes.md,
+  },
+  errorText: {
+    color: theme.colors.danger,
+    marginTop: theme.spacing.md,
+    textAlign: "center",
+  },
+  detailsContainer: {
+    marginTop: theme.spacing.lg,
+    width: "100%",
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+  },
+  detailText: {
+    fontSize: theme.typography.sizes.md,
+    marginBottom: theme.spacing.sm,
+  },
+  amountDue: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: "bold",
+    color: theme.colors.primary,
+    marginVertical: theme.spacing.sm,
+  },
+  sectionTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: "600",
+    marginBottom: theme.spacing.md,
   },
 });
 

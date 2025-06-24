@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   buildingName: {
     fontSize: theme.typography.sizes.lg,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: theme.colors.text.primary,
     marginRight: theme.spacing.xs,
   },

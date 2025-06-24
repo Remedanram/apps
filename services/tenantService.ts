@@ -8,6 +8,16 @@ export interface TenantStats {
   inactiveTenants: number;
 }
 
+export interface DueAmountDetails {
+  tenantCode: string;
+  tenantName: string;
+  roomName: string;
+  moveInDate: string;
+  billingMonth: string;
+  amountDue: number;
+  nextBillingStart: string;
+}
+
 const tenantService = {
   // Get all tenants for a specific building
   getAllTenants: async (buildingId: string): Promise<Tenant[]> => {
@@ -188,6 +198,18 @@ const tenantService = {
   // Get the base URL for debugging
   getBaseUrl: () => {
     return api.getBaseUrl();
+  },
+
+  getTenantByPhone: async (phone: string, buildingId: number) => {
+    const response = await api.get(
+      `/tenant/phone/${phone}?buildingId=${buildingId}`
+    );
+    return response.data;
+  },
+
+  getTenantDue: async (tenantCode: string): Promise<DueAmountDetails> => {
+    const response = await api.get(`/tenant/${tenantCode}/due`);
+    return response.data;
   },
 };
 
