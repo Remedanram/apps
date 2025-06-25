@@ -25,7 +25,24 @@ const tenantService = {
       const response = await api.get(`/buildings/${buildingId}/tenants`);
       console.log("getAllTenants response:", response);
       if (response?.data) {
-        return response.data;
+        // Map backend response to UI model
+        return response.data.map((tenant: any) => ({
+          id: tenant.tenantCode, // using tenantCode as id
+          name: tenant.name,
+          phone: tenant.phone,
+          email: tenant.email,
+          moveInDate: tenant.moveInDate,
+          moveOutDate: tenant.moveOutDate,
+          status: tenant.status,
+          description: tenant.description,
+          room: {
+            roomName: tenant.roomName,
+            rentAmount: tenant.rentAmount,
+            description: "", // Not provided by backend, set default
+            active: true, // Not provided by backend, set default
+            occupied: true, // Not provided by backend, set default
+          },
+        }));
       }
       return [];
     } catch (error) {

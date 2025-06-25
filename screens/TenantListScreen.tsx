@@ -194,16 +194,19 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
         }
         renderItem={({ item }) => (
           <Card style={styles.tenantCard}>
+            <Text style={styles.tenantDetails}>Tenant Code: {item.id}</Text>
             <Text style={styles.tenantName}>{item.name}</Text>
             <Text style={styles.tenantDetails}>Phone: {item.phone}</Text>
             {item.email && (
               <Text style={styles.tenantDetails}>Email: {item.email}</Text>
             )}
+            {item.room?.roomName && (
+              <Text style={styles.tenantDetails}>
+                Room: {item.room.roomName}
+              </Text>
+            )}
             <Text style={styles.tenantDetails}>
-              Room: {item.room?.roomName || "No room assigned"}
-            </Text>
-            <Text style={styles.tenantDetails}>
-              Rent: ${item.room?.rentAmount || "N/A"}
+              Rent Amount: {item.room?.rentAmount}
             </Text>
             {item.room?.description && (
               <Text style={styles.tenantDetails}>
