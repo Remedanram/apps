@@ -153,13 +153,21 @@ const DashboardScreen: React.FC = () => {
             color={theme.colors.text.primary}
           />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setIsAddBuildingModalVisible(true)}
-        >
-          <Feather name="plus" size={20} color={theme.colors.primary} />
-          <Text style={styles.addButtonText}>Add Building</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setIsAddBuildingModalVisible(true)}
+          >
+            <Feather name="plus" size={20} color={theme.colors.primary} />
+            <Text style={styles.addButtonText}>Add Building</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={() => Alert.alert("Coming soon")}
+          >
+            <Feather name="bell" size={22} color={theme.colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -336,6 +344,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: theme.colors.text.primary,
     marginRight: theme.spacing.xs,
+  },
+  notificationButton: {
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
   },
   addButton: {
     flexDirection: "row",
