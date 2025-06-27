@@ -157,6 +157,37 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
     );
   };
 
+  const handleMoreOptions = (tenant: Tenant) => {
+    const options = [
+      {
+        text: "Edit",
+        onPress: () => handleEditTenant(tenant),
+      },
+      {
+        text: tenant.status === TenantStatus.ACTIVE ? "Deactivate" : "Activate",
+        onPress: () => {
+          if (tenant.status === TenantStatus.ACTIVE) {
+            handleDeactivateTenant(tenant.room?.roomName || "", tenant.phone);
+          } else {
+            handleActivateTenant(tenant.room?.roomName || "", tenant.phone);
+          }
+        },
+      },
+      {
+        text: "Delete",
+        onPress: () =>
+          handleDeleteTenant(tenant.room?.roomName || "", tenant.phone),
+        style: "destructive" as "destructive",
+      },
+      {
+        text: "Cancel",
+        style: "cancel" as "cancel",
+      },
+    ];
+
+    Alert.alert("Tenant Actions", "Choose an action", options);
+  };
+
   const filteredTenants = tenants.filter(
     (tenant) =>
       tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -194,73 +225,49 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
         }
         renderItem={({ item }) => (
           <Card style={styles.tenantCard}>
-            <Text style={styles.tenantDetails}>Tenant Code: {item.id}</Text>
-            <Text style={styles.tenantName}>{item.name}</Text>
-            <Text style={styles.tenantDetails}>Phone: {item.phone}</Text>
-            {item.email && (
-              <Text style={styles.tenantDetails}>Email: {item.email}</Text>
-            )}
-            {item.room?.roomName && (
-              <Text style={styles.tenantDetails}>
-                Room: {item.room.roomName}
-              </Text>
-            )}
-            <Text style={styles.tenantDetails}>
-              Rent Amount: {item.room?.rentAmount}
-            </Text>
-            {item.room?.description && (
-              <Text style={styles.tenantDetails}>
-                Description: {item.room.description}
-              </Text>
-            )}
-            <Text style={styles.tenantDetails}>
-              Move-in Date: {new Date(item.moveInDate).toLocaleDateString()}
-            </Text>
-            <View style={styles.tenantActions}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.editButton]}
-                onPress={() => handleEditTenant(item)}
-              >
-                <Feather name="edit" size={16} color={theme.colors.card} />
-                <Text style={styles.buttonText}>Edit</Text>
-              </TouchableOpacity>
-              {item.status === TenantStatus.ACTIVE ? (
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.deactivateButton]}
-                  onPress={() =>
-                    handleDeactivateTenant(
-                      item.room?.roomName || "",
-                      item.phone
-                    )
-                  }
-                >
-                  <Feather name="user-x" size={16} color={theme.colors.card} />
-                  <Text style={styles.buttonText}>Deactivate</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.activateButton]}
-                  onPress={() =>
-                    handleActivateTenant(item.room?.roomName || "", item.phone)
-                  }
-                >
-                  <Feather
-                    name="user-check"
-                    size={16}
-                    color={theme.colors.card}
-                  />
-                  <Text style={styles.buttonText}>Activate</Text>
-                </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleMoreOptions(item)}
+              style={styles.moreOptions}
+            >
+              <Feather
+                name="more-vertical"
+                size={24}
+                color={theme.colors.text.secondary}
+              />
+            </TouchableOpacity>
+            <View style={styles.cardContent}>
+              <View style={styles.tenantInfo}>
+                <Text style={styles.tenantDetails}>Tenant Code: {item.id}</Text>
+                <Text style={styles.tenantName}>{item.name}</Text>
+              </View>
+
+              <Text style={styles.tenantDetails}>Phone: {item.phone}</Text>
+              {item.email && (
+                <Text style={styles.tenantDetails}>Email: {item.email}</Text>
               )}
-              <TouchableOpacity
-                style={[styles.actionButton, styles.deleteButton]}
-                onPress={() =>
-                  handleDeleteTenant(item.room?.roomName || "", item.phone)
-                }
-              >
-                <Feather name="trash-2" size={16} color={theme.colors.card} />
-                <Text style={styles.buttonText}>Delete</Text>
-              </TouchableOpacity>
+              {item.room?.roomName && (
+                <Text style={styles.tenantDetails}>
+                  Room: {item.room.roomName}
+                </Text>
+              )}
+              <Text style={styles.tenantDetails}>
+                Rent Amount: {item.room?.rentAmount}
+              </Text>
+              {item.room?.description && (
+                <Text style={styles.tenantDetails}>
+                  Description: {item.room.description}
+                </Text>
+              )}
+              <Text style={styles.tenantDetails}>
+                Move-in Date: {new Date(item.moveInDate).toLocaleDateString()}
+              </Text>
+            </View>
+            <View style={styles.photoPlaceholder}>
+              <Feather
+                name="user"
+                size={48}
+                color={theme.colors.text.secondary}
+              />
             </View>
           </Card>
         )}
@@ -305,6 +312,8 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
   },
   tenantCard: {
+    flexDirection: "row",
+    alignItems: "center",
     marginHorizontal: theme.spacing.md,
     marginVertical: theme.spacing.sm,
     padding: theme.spacing.md,
@@ -315,6 +324,30 @@ const styles = StyleSheet.create({
     shadowOpacity: theme.shadows.small.shadowOpacity,
     shadowRadius: theme.shadows.small.shadowRadius,
     elevation: theme.shadows.small.elevation,
+  },
+  mainContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  cardContent: {
+    flex: 1,
+    marginRight: theme.spacing.md,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: theme.spacing.sm,
+  },
+  tenantInfo: {
+    flex: 1,
+  },
+  moreOptions: {
+    position: "absolute",
+    top: theme.spacing.md,
+    right: theme.spacing.md,
+    zIndex: 1,
   },
   tenantName: {
     fontSize: theme.typography.sizes.lg,
@@ -366,6 +399,15 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     fontSize: theme.typography.sizes.md,
     marginTop: theme.spacing.xl,
+  },
+  photoPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.border,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: theme.spacing.md,
   },
 });
 

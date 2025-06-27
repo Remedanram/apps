@@ -5,6 +5,7 @@ export interface Building {
   code: string;
   name: string;
   billerCode: string;
+  createdAt: string;
 }
 
 export interface CreateBuildingRequest {

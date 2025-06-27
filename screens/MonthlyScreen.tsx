@@ -106,9 +106,46 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
     setRefreshing(false);
   };
 
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  // Filter months based on building creation date
+  let filteredMonths = months;
+  if (selectedBuilding?.createdAt) {
+    const createdDate = new Date(selectedBuilding.createdAt);
+    const creationYear = createdDate.getFullYear();
+    const creationMonth = createdDate.getMonth(); // 0-based
+    const selectedYear = selectedDate.getFullYear();
+    if (selectedYear === creationYear) {
+      filteredMonths = months.slice(creationMonth);
+    }
+  }
+
   const handleMonthSelect = (month: string) => {
     const newDate = new Date(selectedDate);
-    newDate.setMonth(months.indexOf(month));
+    let monthIndex = months.indexOf(month);
+    if (selectedBuilding?.createdAt) {
+      const createdDate = new Date(selectedBuilding.createdAt);
+      const creationYear = createdDate.getFullYear();
+      const creationMonth = createdDate.getMonth();
+      const selectedYear = selectedDate.getFullYear();
+      if (selectedYear === creationYear) {
+        monthIndex = creationMonth + filteredMonths.indexOf(month);
+      }
+    }
+    newDate.setMonth(monthIndex);
     setSelectedDate(newDate);
     setShowMonthPicker(false);
     navigation.navigate("MonthlyDetails", {
@@ -127,21 +164,6 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
     const totalRooms = paidCount + unpaidCount;
     return totalRooms > 0 ? (paidCount / totalRooms) * 100 : 0;
   };
-
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
 
   const handleGetDueAmount = async () => {
     if (!tenantCode) {
@@ -344,7 +366,7 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Month</Text>
             <FlatList
-              data={months}
+              data={filteredMonths}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <TouchableOpacity
