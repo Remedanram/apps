@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
 // Use the IP address that works in Postman
-const BASE_URL = "http://192.168.20.51:8888/api";
+const BASE_URL = "http://192.168.20.106:8888/api";
 
 // Reduce timeout and add retry configuration
 const TIMEOUT = 10000; // 10 seconds timeout

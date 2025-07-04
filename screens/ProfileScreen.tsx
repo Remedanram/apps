@@ -139,6 +139,20 @@ const ProfileScreen = () => {
             <Text style={styles.infoValue}>{profile.email}</Text>
           </View>
         </Card>
+
+        <Card variant="outlined" style={styles.infoCard}>
+          <View style={styles.infoRow}>
+            <View style={styles.infoLeft}>
+              <Feather
+                name="credit-card"
+                size={20}
+                color={theme.colors.primary}
+              />
+              <Text style={styles.infoLabel}>Biller Code</Text>
+            </View>
+            <Text style={styles.infoValue}>{profile.billerCode || "-"}</Text>
+          </View>
+        </Card>
       </View>
     </ScrollView>
   );

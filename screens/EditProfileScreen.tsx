@@ -32,12 +32,18 @@ const EditProfileScreen = () => {
   const [formData, setFormData] = useState({
     name: profile.name,
     email: profile.email,
+    billerCode: profile.billerCode || "",
   });
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    billerCode?: string;
+  }>({});
 
   const validateForm = () => {
-    const newErrors: { name?: string; email?: string } = {};
+    const newErrors: { name?: string; email?: string; billerCode?: string } =
+      {};
 
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
@@ -47,6 +53,10 @@ const EditProfileScreen = () => {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
+    }
+
+    if (!formData.billerCode.trim()) {
+      newErrors.billerCode = "Biller Code is required";
     }
 
     setErrors(newErrors);
@@ -176,6 +186,31 @@ const EditProfileScreen = () => {
               />
               {errors.email && (
                 <Text style={styles.errorText}>{errors.email}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <View style={styles.inputHeader}>
+                <Feather
+                  name="credit-card"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+                <Text style={styles.inputLabel}>Biller Code</Text>
+              </View>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  errors.billerCode && styles.textInputError,
+                ]}
+                value={formData.billerCode}
+                onChangeText={(text) => updateField("billerCode", text)}
+                placeholder="Enter your biller code"
+                placeholderTextColor={theme.colors.text.secondary}
+                autoCapitalize="characters"
+              />
+              {errors.billerCode && (
+                <Text style={styles.errorText}>{errors.billerCode}</Text>
               )}
             </View>
           </Card>

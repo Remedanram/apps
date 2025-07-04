@@ -33,6 +33,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { selectedBuilding, setSelectedBuilding } = useBuilding();
+  const [billerCode, setBillerCode] = useState("");
 
   const handleAuth = async () => {
     if (isLogin) {
@@ -118,7 +119,12 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         }
       } else {
         // SIGNUP FLOW
-        response = await authService.signup({ name, email, password });
+        response = await authService.signup({
+          name,
+          email,
+          password,
+          billerCode,
+        });
         console.log("Signup response received:", response);
 
         // After successful signup, automatically login to get token
@@ -230,6 +236,24 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 onChangeText={setName}
                 autoCapitalize="words"
                 autoCorrect={false}
+              />
+            </View>
+          )}
+
+          {/* Biller Code input for signup */}
+          {!isLogin && (
+            <View style={styles.inputContainer}>
+              <Feather
+                name="credit-card"
+                size={20}
+                color={theme.colors.text.secondary}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Biller Code"
+                value={billerCode}
+                onChangeText={setBillerCode}
+                autoCapitalize="characters"
               />
             </View>
           )}

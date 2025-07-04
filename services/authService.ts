@@ -4,6 +4,7 @@ export interface SignupRequest {
   name: string;
   email: string;
   password: string;
+  billerCode: string;
 }
 
 export interface LoginRequest {
@@ -17,6 +18,7 @@ export interface AuthResponse {
     id: number;
     name: string;
     email: string;
+    billerCode?: string;
   };
 }
 
@@ -33,7 +35,7 @@ export const getProfile = async () => {
 
 export const updateProfile = async (
   userId: string,
-  profileData: { name: string; email: string }
+  profileData: { name: string; email: string; billerCode: string }
 ) => {
   try {
     const response = await api.put(`/auth/edit/${userId}`, profileData);
