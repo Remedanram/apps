@@ -59,6 +59,47 @@ export const changePassword = async (passwordData: {
   }
 };
 
+// Forgot Password - Request OTP
+export const forgotPasswordOtp = async (email: string) => {
+  try {
+    const response = await api.post("/auth/forgot-password-otp", { email });
+    return response.data;
+  } catch (error) {
+    console.error("Error requesting OTP:", error);
+    throw error;
+  }
+};
+
+// Forgot Password - Validate OTP
+export const validateOtp = async (email: string, otpCode: string) => {
+  try {
+    const response = await api.post("/auth/validate-otp", { email, otpCode });
+    return response.data;
+  } catch (error) {
+    console.error("Error validating OTP:", error);
+    throw error;
+  }
+};
+
+// Forgot Password - Reset Password
+export const resetPasswordOtp = async (
+  email: string,
+  otpCode: string,
+  newPassword: string
+) => {
+  try {
+    const response = await api.post("/auth/reset-password-otp", {
+      email,
+      otpCode,
+      newPassword,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    throw error;
+  }
+};
+
 const authService = {
   // Signup new user
   signup: async (data: SignupRequest): Promise<AuthResponse> => {

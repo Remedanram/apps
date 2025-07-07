@@ -23,6 +23,9 @@ export type RootStackParamList = {
   Profile: undefined;
   EditProfile: { profile: UserProfile };
   ChangePassword: undefined;
+  ForgotPassword: undefined;
+  OtpVerification: { email: string };
+  ResetPassword: { email: string; otpCode: string };
 };
 
 export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

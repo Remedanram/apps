@@ -29,6 +29,9 @@ import BuildingSelectionScreen from "../screens/BuildingSelectionScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
+import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
+import OtpVerificationScreen from "../screens/OtpVerificationScreen";
+import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 
 // Types
 export type RootStackParamList = {
@@ -52,6 +55,9 @@ export type RootStackParamList = {
   Profile: undefined;
   EditProfile: { profile: UserProfile };
   ChangePassword: undefined;
+  ForgotPassword: undefined;
+  OtpVerification: { email: string };
+  ResetPassword: { email: string; otpCode: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -140,6 +146,12 @@ const AppNavigator = () => {
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen
+          name="OtpVerification"
+          component={OtpVerificationScreen}
+        />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
