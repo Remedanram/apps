@@ -30,13 +30,14 @@ const roomService = {
       const response = await api.get(`/buildings/${buildingId}/rooms`);
       console.log("getAllRooms response:", response);
       if (response?.data) {
-        // Check if the response is wrapped in a data property
-        const rooms = Array.isArray(response.data)
-          ? response.data
-          : response.data.data
-          ? response.data.data
-          : [];
-        return rooms;
+        return response.data.map((room: any) => ({
+          id: room.id,
+          roomName: room.roomName,
+          rentAmount: room.rentAmount,
+          description: room.description,
+          active: room.active,
+          occupied: room.occupied, // use backend value directly
+        }));
       }
       return [];
     } catch (error) {
