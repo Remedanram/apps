@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
 import { Room } from "../types/room";
 import { useBuilding } from "../contexts/BuildingContext";
+import { Feather } from "@expo/vector-icons";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "AddTenant">;
@@ -101,6 +102,12 @@ const AddTenantScreen = ({ navigation }: Props) => {
 
   return (
     <ScrollView style={styles.container}>
+      <View style={styles.headerSection}>
+        <View style={styles.headerIconCircle}>
+          <Feather name="user-plus" size={32} color={theme.colors.card} />
+        </View>
+        <Text style={styles.headerTitle}>Add New Tenant</Text>
+      </View>
       <Card style={styles.formCard}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Room *</Text>
@@ -120,75 +127,115 @@ const AddTenantScreen = ({ navigation }: Props) => {
           </Picker>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Name *</Text>
-          <TextInput
-            style={styles.input}
-            value={tenantData.name}
-            onChangeText={(text) =>
-              setTenantData({ ...tenantData, name: text })
-            }
-            placeholder="Enter tenant name"
-            placeholderTextColor={theme.colors.text.secondary}
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="user"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
           />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={tenantData.name}
+              onChangeText={(text) =>
+                setTenantData({ ...tenantData, name: text })
+              }
+              placeholder="Enter tenant name"
+              placeholderTextColor={theme.colors.text.secondary}
+            />
+          </View>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Phone *</Text>
-          <TextInput
-            style={styles.input}
-            value={tenantData.phone}
-            onChangeText={(text) =>
-              setTenantData({ ...tenantData, phone: text })
-            }
-            placeholder="Enter phone number"
-            placeholderTextColor={theme.colors.text.secondary}
-            keyboardType="phone-pad"
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="phone"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
           />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Phone *</Text>
+            <TextInput
+              style={styles.input}
+              value={tenantData.phone}
+              onChangeText={(text) =>
+                setTenantData({ ...tenantData, phone: text })
+              }
+              placeholder="Enter phone number"
+              placeholderTextColor={theme.colors.text.secondary}
+              keyboardType="phone-pad"
+            />
+          </View>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={tenantData.email}
-            onChangeText={(text) =>
-              setTenantData({ ...tenantData, email: text })
-            }
-            placeholder="Enter email address"
-            placeholderTextColor={theme.colors.text.secondary}
-            keyboardType="email-address"
-            autoCapitalize="none"
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="mail"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
           />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={tenantData.email}
+              onChangeText={(text) =>
+                setTenantData({ ...tenantData, email: text })
+              }
+              placeholder="Enter email address"
+              placeholderTextColor={theme.colors.text.secondary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Move-in Date</Text>
-          <TextInput
-            style={styles.input}
-            value={tenantData.moveInDate}
-            onChangeText={(text) =>
-              setTenantData({ ...tenantData, moveInDate: text })
-            }
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={theme.colors.text.secondary}
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="calendar"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
           />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Move-in Date</Text>
+            <TextInput
+              style={styles.input}
+              value={tenantData.moveInDate}
+              onChangeText={(text) =>
+                setTenantData({ ...tenantData, moveInDate: text })
+              }
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={theme.colors.text.secondary}
+            />
+          </View>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={tenantData.description}
-            onChangeText={(text) =>
-              setTenantData({ ...tenantData, description: text })
-            }
-            placeholder="Enter tenant description"
-            placeholderTextColor={theme.colors.text.secondary}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="file-text"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
           />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={tenantData.description}
+              onChangeText={(text) =>
+                setTenantData({ ...tenantData, description: text })
+              }
+              placeholder="Enter tenant description"
+              placeholderTextColor={theme.colors.text.secondary}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
         </View>
 
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
@@ -204,12 +251,61 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  headerSection: {
+    alignItems: "center",
+    marginTop: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+  },
+  headerIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: theme.spacing.sm,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  headerTitle: {
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: "700",
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.sm,
+  },
   formCard: {
     margin: theme.spacing.md,
-    padding: theme.spacing.md,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.xl,
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   inputGroup: {
     marginBottom: theme.spacing.md,
+  },
+  inputGroupRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    shadowColor: theme.shadows.small.shadowColor,
+    shadowOffset: theme.shadows.small.shadowOffset,
+    shadowOpacity: theme.shadows.small.shadowOpacity,
+    shadowRadius: theme.shadows.small.shadowRadius,
+    elevation: theme.shadows.small.elevation,
+  },
+  inputIcon: {
+    marginRight: theme.spacing.sm,
   },
   label: {
     fontSize: theme.typography.sizes.md,
@@ -232,20 +328,26 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   textArea: {
-    minHeight: 100,
+    minHeight: 80,
     textAlignVertical: "top",
   },
   submitButton: {
     backgroundColor: theme.colors.primary,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.xl,
     alignItems: "center",
-    marginTop: theme.spacing.md,
+    marginTop: theme.spacing.lg,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   submitButtonText: {
     color: theme.colors.card,
-    fontSize: theme.typography.sizes.md,
-    fontWeight: "600",
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: "700",
+    letterSpacing: 1,
   },
 });
 

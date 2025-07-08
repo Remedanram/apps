@@ -1,3 +1,5 @@
+import type { Room } from "./room";
+
 export enum TenantStatus {
   ACTIVE = "ACTIVE",
   INACTIVE = "INACTIVE",
@@ -12,13 +14,7 @@ export interface Tenant {
   moveOutDate: string | null;
   status: TenantStatus;
   description: string;
-  room: {
-    roomName: string;
-    rentAmount: number;
-    description: string;
-    active: boolean;
-    occupied: boolean;
-  };
+  room: Room;
 }
 
 export interface CreateTenantRequest {

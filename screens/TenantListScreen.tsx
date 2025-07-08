@@ -77,7 +77,11 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
     }, [selectedBuilding?.id, fetchTenants])
   );
 
-  const handleDeleteTenant = async (roomName: string, phone: string) => {
+  const handleDeleteTenant = async (tenant: Tenant) => {
+    if (!tenant.id) {
+      Alert.alert("Error", "Tenant ID is missing. Cannot delete this tenant.");
+      return;
+    }
     Alert.alert(
       "Delete Tenant",
       "Are you sure you want to delete this tenant?",
@@ -94,8 +98,8 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
               if (!selectedBuilding?.id) return;
               await tenantService.deleteTenant(
                 selectedBuilding.id,
-                roomName,
-                phone
+                tenant.room.id!,
+                tenant.id.toString()
               );
               fetchTenants();
               Alert.alert("Success", "Tenant deleted successfully");
@@ -112,10 +116,10 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("EditTenant", { tenant });
   };
 
-  const handleActivateTenant = async (roomName: string, phone: string) => {
+  const handleActivateTenant = async (tenant: Tenant) => {
     try {
       if (!selectedBuilding?.id) return;
-      await tenantService.activateTenant(selectedBuilding.id, roomName, phone);
+      await tenantService.activateTenant(selectedBuilding.id, tenant.room.id!);
       fetchTenants();
       Alert.alert("Success", "Tenant activated successfully");
     } catch (error: any) {
@@ -123,7 +127,7 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const handleDeactivateTenant = async (roomName: string, phone: string) => {
+  const handleDeactivateTenant = async (tenant: Tenant) => {
     Alert.alert(
       "Deactivate Tenant",
       "Are you sure you want to deactivate this tenant?",
@@ -140,8 +144,7 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
               if (!selectedBuilding?.id) return;
               await tenantService.deactivateTenant(
                 selectedBuilding.id,
-                roomName,
-                phone
+                tenant.room.id!
               );
               fetchTenants();
               Alert.alert("Success", "Tenant deactivated successfully");
@@ -167,16 +170,15 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
         text: tenant.status === TenantStatus.ACTIVE ? "Deactivate" : "Activate",
         onPress: () => {
           if (tenant.status === TenantStatus.ACTIVE) {
-            handleDeactivateTenant(tenant.room?.roomName || "", tenant.phone);
+            handleDeactivateTenant(tenant);
           } else {
-            handleActivateTenant(tenant.room?.roomName || "", tenant.phone);
+            handleActivateTenant(tenant);
           }
         },
       },
       {
         text: "Delete",
-        onPress: () =>
-          handleDeleteTenant(tenant.room?.roomName || "", tenant.phone),
+        onPress: () => handleDeleteTenant(tenant),
         style: "destructive" as "destructive",
       },
       {
@@ -225,6 +227,45 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
         }
         renderItem={({ item }) => (
           <Card style={styles.tenantCard}>
+            <View style={styles.avatarSection}>
+              <View style={styles.avatarCircle}>
+                <Feather name="user" size={36} color={theme.colors.primary} />
+              </View>
+              <View style={styles.statusBadgeWrapper}>
+                <Text
+                  style={[
+                    styles.statusBadge,
+                    item.status === TenantStatus.ACTIVE
+                      ? styles.statusActive
+                      : styles.statusInactive,
+                  ]}
+                >
+                  {item.status === TenantStatus.ACTIVE ? "Active" : "Inactive"}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.tenantName}>{item.name}</Text>
+              <Text style={styles.tenantCode}>Tenant Code: {item.id}</Text>
+              <Text style={styles.tenantDetailsAccent}>
+                Room: {item.room?.roomName}
+              </Text>
+              <Text style={styles.tenantDetails}>Phone: {item.phone}</Text>
+              {item.email && (
+                <Text style={styles.tenantDetails}>Email: {item.email}</Text>
+              )}
+              <Text style={styles.tenantDetailsAccent}>
+                Rent: {item.room?.rentAmount}
+              </Text>
+              {item.room?.description && (
+                <Text style={styles.tenantDetails}>
+                  {item.room.description}
+                </Text>
+              )}
+              <Text style={styles.tenantDetails}>
+                Move-in: {new Date(item.moveInDate).toLocaleDateString()}
+              </Text>
+            </View>
             <TouchableOpacity
               onPress={() => handleMoreOptions(item)}
               style={styles.moreOptions}
@@ -235,44 +276,13 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
                 color={theme.colors.text.secondary}
               />
             </TouchableOpacity>
-            <View style={styles.cardContent}>
-              <View style={styles.tenantInfo}>
-                <Text style={styles.tenantDetails}>Tenant Code: {item.id}</Text>
-                <Text style={styles.tenantName}>{item.name}</Text>
-              </View>
-
-              <Text style={styles.tenantDetails}>Phone: {item.phone}</Text>
-              {item.email && (
-                <Text style={styles.tenantDetails}>Email: {item.email}</Text>
-              )}
-              {item.room?.roomName && (
-                <Text style={styles.tenantDetails}>
-                  Room: {item.room.roomName}
-                </Text>
-              )}
-              <Text style={styles.tenantDetails}>
-                Rent Amount: {item.room?.rentAmount}
-              </Text>
-              {item.room?.description && (
-                <Text style={styles.tenantDetails}>
-                  Description: {item.room.description}
-                </Text>
-              )}
-              <Text style={styles.tenantDetails}>
-                Move-in Date: {new Date(item.moveInDate).toLocaleDateString()}
-              </Text>
-            </View>
-            <View style={styles.photoPlaceholder}>
-              <Feather
-                name="user"
-                size={48}
-                color={theme.colors.text.secondary}
-              />
-            </View>
           </Card>
         )}
         ListEmptyComponent={
-          <Text style={styles.noTenantsText}>No tenants available</Text>
+          <View style={styles.emptyStateContainer}>
+            <Feather name="users" size={48} color={theme.colors.primary} />
+            <Text style={styles.noTenantsText}>No tenants available</Text>
+          </View>
         }
       />
     </View>
@@ -311,37 +321,79 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.md,
     color: theme.colors.text.primary,
   },
+  avatarSection: {
+    alignItems: "center",
+    marginRight: theme.spacing.md,
+    justifyContent: "center",
+  },
+  avatarCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.colors.primary + "22",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: theme.spacing.xs,
+  },
+  statusBadgeWrapper: {
+    alignItems: "center",
+  },
+  statusBadge: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: "bold",
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 12,
+    overflow: "hidden",
+    color: theme.colors.card,
+    marginTop: 2,
+  },
+  statusActive: {
+    backgroundColor: theme.colors.success,
+  },
+  statusInactive: {
+    backgroundColor: theme.colors.error,
+  },
   tenantCard: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginHorizontal: theme.spacing.md,
     marginVertical: theme.spacing.sm,
     padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: theme.borderRadius.lg,
     backgroundColor: theme.colors.card,
-    shadowColor: theme.shadows.small.shadowColor,
-    shadowOffset: theme.shadows.small.shadowOffset,
-    shadowOpacity: theme.shadows.small.shadowOpacity,
-    shadowRadius: theme.shadows.small.shadowRadius,
-    elevation: theme.shadows.small.elevation,
-  },
-  mainContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   cardContent: {
     flex: 1,
-    marginRight: theme.spacing.md,
+    marginLeft: theme.spacing.md,
   },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: theme.spacing.sm,
+  tenantName: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: "700",
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.xs,
   },
-  tenantInfo: {
-    flex: 1,
+  tenantCode: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.xs,
+    fontWeight: "500",
+  },
+  tenantDetailsAccent: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.info,
+    marginBottom: theme.spacing.xs,
+    fontWeight: "600",
+  },
+  tenantDetails: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.xs,
   },
   moreOptions: {
     position: "absolute",
@@ -349,56 +401,17 @@ const styles = StyleSheet.create({
     right: theme.spacing.md,
     zIndex: 1,
   },
-  tenantName: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: "600",
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing.xs,
-  },
-  tenantActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    paddingTop: theme.spacing.sm,
-    gap: theme.spacing.sm,
-  },
-  actionButton: {
-    flexDirection: "row",
+  emptyStateContainer: {
     alignItems: "center",
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
-    gap: theme.spacing.xs,
-  },
-  buttonText: {
-    color: theme.colors.card,
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: "500",
-  },
-  editButton: {
-    backgroundColor: theme.colors.primary,
-  },
-  deactivateButton: {
-    backgroundColor: theme.colors.warning,
-  },
-  activateButton: {
-    backgroundColor: theme.colors.success,
-  },
-  deleteButton: {
-    backgroundColor: theme.colors.error,
-  },
-  tenantDetails: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing.xs,
+    justifyContent: "center",
+    marginTop: theme.spacing.xl,
   },
   noTenantsText: {
     textAlign: "center",
-    color: theme.colors.text.secondary,
-    fontSize: theme.typography.sizes.md,
-    marginTop: theme.spacing.xl,
+    color: theme.colors.primary,
+    fontSize: theme.typography.sizes.lg,
+    marginTop: theme.spacing.md,
+    fontWeight: "600",
   },
   photoPlaceholder: {
     width: 100,

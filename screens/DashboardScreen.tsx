@@ -19,7 +19,7 @@ import tenantService from "../services/tenantService";
 import transactionService from "../services/transactionService";
 import type { Transaction } from "../services/transactionService";
 import AddBuildingModal from "../components/AddBuildingModal";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useBuilding } from "../contexts/BuildingContext";
 
 type DashboardScreenNavigationProp = NativeStackNavigationProp<
@@ -106,6 +106,14 @@ const DashboardScreen: React.FC = () => {
       loadDashboardData();
     }
   }, [selectedBuilding?.id]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (selectedBuilding?.id) {
+        loadDashboardData();
+      }
+    }, [selectedBuilding?.id])
+  );
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);

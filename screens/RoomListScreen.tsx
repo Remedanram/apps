@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useLayoutEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -32,6 +32,28 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const { selectedBuilding } = useBuilding();
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle: { backgroundColor: theme.colors.card },
+      headerTintColor: theme.colors.text.primary,
+      headerTitleStyle: { fontWeight: "600" },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ marginLeft: theme.spacing.md }}
+        >
+          <Feather
+            name="arrow-left"
+            size={24}
+            color={theme.colors.text.primary}
+          />
+        </TouchableOpacity>
+      ),
+      headerTitle: "Rooms",
+    });
+  }, [navigation]);
 
   const loadRooms = useCallback(async () => {
     try {
@@ -166,6 +188,26 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
     ]);
   };
 
+  const handleMoreOptions = (room: Room) => {
+    setSelectedRoom(room);
+    const options = [
+      {
+        text: "Edit",
+        onPress: () => handleEditRoom(room),
+      },
+      {
+        text: "Delete",
+        onPress: () => handleDeleteRoom(room.id?.toString() || ""),
+        style: "destructive" as "destructive",
+      },
+      {
+        text: "Cancel",
+        style: "cancel" as "cancel",
+      },
+    ];
+    Alert.alert("Room Actions", "Choose an action", options);
+  };
+
   const filteredRooms = rooms.filter(
     (room) =>
       room.roomName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -174,61 +216,41 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderRoomItem = ({ item }: { item: Room }) => (
     <Card style={styles.roomCard}>
-      <View style={styles.roomHeader}>
-        <Text style={styles.roomNumber}>{item.roomName}</Text>
-        <View
-          style={[
-            styles.statusBadge,
-            {
-              backgroundColor: item.occupied
-                ? theme.colors.status.pending
-                : theme.colors.status.paid,
-            },
-          ]}
-        >
-          <Text style={styles.statusText}>
+      <View style={styles.avatarSection}>
+        <View style={styles.avatarCircle}>
+          <Feather name="home" size={36} color={theme.colors.primary} />
+        </View>
+        <View style={styles.statusBadgeWrapper}>
+          <Text
+            style={[
+              styles.statusBadge,
+              item.occupied ? styles.statusOccupied : styles.statusVacant,
+            ]}
+          >
             {item.occupied ? "Occupied" : "Vacant"}
           </Text>
         </View>
       </View>
-      {item.description && (
-        <View style={styles.roomDetails}>
-          <Text style={styles.label}>Description:</Text>
-          <Text style={styles.value}>{item.description}</Text>
-        </View>
-      )}
-      <View style={styles.roomDetails}>
-        <Text style={styles.label}>Rent:</Text>
-        <Text style={styles.value}>${item.rentAmount}</Text>
+      <View style={styles.cardContent}>
+        <Text style={styles.roomName}>{item.roomName}</Text>
+        {item.description && (
+          <Text style={styles.roomDetailsAccent}>{item.description}</Text>
+        )}
+        <Text style={styles.roomDetails}>Rent: ${item.rentAmount}</Text>
+        <Text style={styles.roomDetails}>
+          Status: {item.active ? "Active" : "Inactive"}
+        </Text>
       </View>
-      <View style={styles.roomDetails}>
-        <Text style={styles.label}>Status:</Text>
-        <Text style={styles.value}>{item.active ? "Active" : "Inactive"}</Text>
-      </View>
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.editButton]}
-          onPress={() => handleEditRoom(item)}
-        >
-          <Feather name="edit" size={20} color={theme.colors.primary} />
-          <Text
-            style={[styles.actionButtonText, { color: theme.colors.primary }]}
-          >
-            Edit
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => handleDeleteRoom(item.id!)}
-        >
-          <Feather name="trash-2" size={20} color={theme.colors.error} />
-          <Text
-            style={[styles.actionButtonText, { color: theme.colors.error }]}
-          >
-            Delete
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        onPress={() => handleMoreOptions(item)}
+        style={styles.moreOptions}
+      >
+        <Feather
+          name="more-vertical"
+          size={24}
+          color={theme.colors.text.secondary}
+        />
+      </TouchableOpacity>
     </Card>
   );
 
@@ -236,8 +258,6 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Connecting to API...</Text>
-        <Text style={styles.apiUrl}>API URL: {roomService.getBaseUrl()}</Text>
       </View>
     );
   }
@@ -249,14 +269,11 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.errorTitle}>Connection Error</Text>
         <Text style={styles.errorText}>{error}</Text>
         <Text style={styles.apiUrl}>API URL: {roomService.getBaseUrl()}</Text>
-        <View style={styles.errorButtons}>
+        <View style={styles.retryButtonRow}>
           <TouchableOpacity style={styles.retryButton} onPress={loadRooms}>
             <Text style={styles.retryButtonText}>Retry Connection</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.retryButton, styles.testButton]}
-            onPress={testConnection}
-          >
+          <TouchableOpacity style={styles.retryButton} onPress={testConnection}>
             <Text style={styles.retryButtonText}>Test Connection</Text>
           </TouchableOpacity>
         </View>
@@ -271,6 +288,7 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
         <TextInput
           style={styles.searchInput}
           placeholder="Search rooms..."
+          placeholderTextColor={theme.colors.text.secondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -279,12 +297,13 @@ const RoomListScreen: React.FC<Props> = ({ navigation }) => {
         data={filteredRooms}
         renderItem={renderRoomItem}
         keyExtractor={(item) => item.id?.toString() || item.roomName}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={{ paddingBottom: theme.spacing.xl }}
         onRefresh={handleRefresh}
         refreshing={refreshing}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No rooms found</Text>
+          <View style={styles.emptyStateContainer}>
+            <Feather name="home" size={48} color={theme.colors.primary} />
+            <Text style={styles.noRoomsText}>No rooms found</Text>
           </View>
         }
       />
@@ -296,25 +315,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    padding: theme.spacing.md,
+    paddingTop: theme.spacing.md,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: theme.colors.background,
-    padding: theme.spacing.md,
-  },
-  loadingText: {
-    marginTop: theme.spacing.md,
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.text.secondary,
-  },
-  apiUrl: {
-    marginTop: theme.spacing.sm,
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.text.secondary,
-    textAlign: "center",
   },
   errorContainer: {
     flex: 1,
@@ -335,12 +341,23 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     textAlign: "center",
   },
-  retryButton: {
+  apiUrl: {
+    marginTop: theme.spacing.sm,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    textAlign: "center",
+  },
+  retryButtonRow: {
+    flexDirection: "row",
+    gap: theme.spacing.md,
     marginTop: theme.spacing.lg,
+  },
+  retryButton: {
     backgroundColor: theme.colors.primary,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
+    marginHorizontal: theme.spacing.sm,
   },
   retryButtonText: {
     color: theme.colors.card,
@@ -352,91 +369,112 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: theme.colors.card,
     borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.sm,
+    marginHorizontal: theme.spacing.md,
     marginBottom: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    shadowColor: theme.shadows.small.shadowColor,
+    shadowOffset: theme.shadows.small.shadowOffset,
+    shadowOpacity: theme.shadows.small.shadowOpacity,
+    shadowRadius: theme.shadows.small.shadowRadius,
+    elevation: theme.shadows.small.elevation,
   },
   searchInput: {
     flex: 1,
     marginLeft: theme.spacing.sm,
     fontSize: theme.typography.sizes.md,
+    color: theme.colors.text.primary,
   },
-  listContainer: {
-    gap: theme.spacing.md,
-  },
-  emptyContainer: {
-    padding: theme.spacing.lg,
+  avatarSection: {
     alignItems: "center",
+    marginRight: theme.spacing.md,
+    justifyContent: "center",
   },
-  emptyText: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.text.secondary,
-  },
-  roomCard: {
-    padding: theme.spacing.md,
-  },
-  roomHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  avatarCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.colors.primary + "22",
     alignItems: "center",
-    marginBottom: theme.spacing.sm,
+    justifyContent: "center",
+    marginBottom: theme.spacing.xs,
   },
-  roomNumber: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: "600",
+  statusBadgeWrapper: {
+    alignItems: "center",
   },
   statusBadge: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
-  },
-  statusText: {
-    color: theme.colors.card,
     fontSize: theme.typography.sizes.sm,
+    fontWeight: "bold",
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 12,
+    overflow: "hidden",
+    color: theme.colors.card,
+    marginTop: 2,
+  },
+  statusOccupied: {
+    backgroundColor: theme.colors.warning || "#FFA500", // Orange for occupied
+  },
+  statusVacant: {
+    backgroundColor: theme.colors.success || "#4CAF50", // Green for vacant
+  },
+  roomCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginHorizontal: theme.spacing.md,
+    marginVertical: theme.spacing.sm,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  cardContent: {
+    flex: 1,
+    marginLeft: theme.spacing.md,
+  },
+  roomName: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: "700",
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.xs,
+  },
+  roomCode: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.xs,
     fontWeight: "500",
+  },
+  roomDetailsAccent: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.info,
+    marginBottom: theme.spacing.xs,
+    fontWeight: "600",
   },
   roomDetails: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: theme.spacing.xs,
-  },
-  label: {
+    fontSize: theme.typography.sizes.md,
     color: theme.colors.text.secondary,
-    fontSize: theme.typography.sizes.md,
+    marginBottom: theme.spacing.xs,
   },
-  value: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: "500",
+  moreOptions: {
+    position: "absolute",
+    top: theme.spacing.md,
+    right: theme.spacing.md,
+    zIndex: 1,
   },
-  errorButtons: {
-    flexDirection: "row",
-    gap: theme.spacing.md,
-    marginTop: theme.spacing.lg,
-  },
-  testButton: {
-    backgroundColor: theme.colors.secondary,
-  },
-  actionButtons: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: theme.spacing.md,
-    gap: theme.spacing.sm,
-  },
-  actionButton: {
-    flexDirection: "row",
+  emptyStateContainer: {
     alignItems: "center",
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.sm,
-    gap: theme.spacing.xs,
+    justifyContent: "center",
+    marginTop: theme.spacing.xl,
   },
-  editButton: {
-    backgroundColor: theme.colors.primary + "20",
-  },
-  deleteButton: {
-    backgroundColor: theme.colors.error + "20",
-  },
-  actionButtonText: {
-    fontSize: theme.typography.sizes.sm,
+  noRoomsText: {
+    textAlign: "center",
+    color: theme.colors.primary,
+    fontSize: theme.typography.sizes.lg,
+    marginTop: theme.spacing.md,
     fontWeight: "600",
   },
 });

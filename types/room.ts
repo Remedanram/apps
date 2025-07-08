@@ -1,5 +1,5 @@
 export interface Room {
-  id?: number;
+  id?: string; // UUID of the room
   roomName: string;
   rentAmount: number;
   description?: string;

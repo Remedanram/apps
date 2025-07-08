@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -15,6 +16,8 @@ import { Room } from "../types/room";
 import roomService from "../services/roomService";
 import theme from "../constants/theme";
 import { useBuilding } from "../contexts/BuildingContext";
+import { Feather } from "@expo/vector-icons";
+import { Card } from "../components";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "EditRoom">;
@@ -93,56 +96,98 @@ const EditRoomScreen: React.FC<Props> = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.form}>
-        <Text style={styles.label}>Room Name *</Text>
-        <TextInput
-          style={styles.input}
-          value={roomName}
-          onChangeText={setRoomName}
-          placeholder="Enter room name"
-        />
+      <View style={styles.headerSection}>
+        <View style={styles.headerIconCircle}>
+          <Feather name="home" size={32} color={theme.colors.card} />
+        </View>
+        <Text style={styles.headerTitle}>Edit Room</Text>
+      </View>
+      <Card style={styles.formCard}>
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="tag"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Room Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={roomName}
+              onChangeText={setRoomName}
+              placeholder="Enter room name"
+              placeholderTextColor={theme.colors.text.secondary}
+            />
+          </View>
+        </View>
 
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Enter room description"
-          multiline
-          numberOfLines={4}
-        />
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="dollar-sign"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Rent Amount *</Text>
+            <TextInput
+              style={styles.input}
+              value={rentAmount}
+              onChangeText={setRentAmount}
+              placeholder="Enter rent amount"
+              placeholderTextColor={theme.colors.text.secondary}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
 
-        <Text style={styles.label}>Rent Amount *</Text>
-        <TextInput
-          style={styles.input}
-          value={rentAmount}
-          onChangeText={setRentAmount}
-          placeholder="Enter rent amount"
-          keyboardType="numeric"
-        />
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="file-text"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Enter room description"
+              placeholderTextColor={theme.colors.text.secondary}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+        </View>
 
         <TouchableOpacity
           style={[
-            styles.button,
+            styles.statusButton,
             active ? styles.activeButton : styles.inactiveButton,
           ]}
           onPress={() => setActive(!active)}
         >
-          <Text style={styles.buttonText}>
+          <Text style={styles.statusButtonText}>
             {active ? "Active" : "Inactive"}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.submitButton, loading && styles.disabledButton]}
+          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           disabled={loading}
         >
-          <Text style={styles.submitButtonText}>
-            {loading ? "Updating..." : "Update Room"}
-          </Text>
+          {loading ? (
+            <ActivityIndicator color={theme.colors.card} />
+          ) : (
+            <Text style={styles.submitButtonText}>Update Room</Text>
+          )}
         </TouchableOpacity>
-      </View>
+      </Card>
     </ScrollView>
   );
 };
@@ -152,8 +197,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  form: {
+  headerSection: {
+    alignItems: "center",
+    marginTop: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+  },
+  headerIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: theme.spacing.sm,
+  },
+  headerTitle: {
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: "700",
+    color: theme.colors.primary,
+  },
+  formCard: {
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.xl,
     padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  inputGroupRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: theme.spacing.md,
+  },
+  inputIcon: {
+    marginTop: theme.spacing.sm,
+    marginRight: theme.spacing.md,
   },
   label: {
     fontSize: theme.typography.sizes.sm,
@@ -164,15 +246,16 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.card,
     borderRadius: theme.borderRadius.sm,
     padding: theme.spacing.sm,
-    marginBottom: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.text.primary,
   },
   textArea: {
     height: 100,
     textAlignVertical: "top",
   },
-  button: {
+  statusButton: {
     padding: theme.spacing.sm,
     borderRadius: theme.borderRadius.sm,
     marginBottom: theme.spacing.md,
@@ -184,7 +267,7 @@ const styles = StyleSheet.create({
   inactiveButton: {
     backgroundColor: theme.colors.error,
   },
-  buttonText: {
+  statusButtonText: {
     color: theme.colors.card,
     fontSize: theme.typography.sizes.sm,
     fontWeight: "500",
@@ -195,13 +278,8 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     alignItems: "center",
   },
-  disabledButton: {
+  submitButtonDisabled: {
     opacity: 0.7,
-  },
-  submitButtonText: {
-    color: theme.colors.card,
-    fontSize: theme.typography.sizes.md,
-    fontWeight: "500",
   },
 });
 

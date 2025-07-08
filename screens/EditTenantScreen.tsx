@@ -11,9 +11,12 @@ import {
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
-import { Tenant } from "../services/tenantService";
+import type { Tenant } from "../types/tenant";
 import tenantService from "../services/tenantService";
 import theme from "../constants/theme";
+import { Feather } from "@expo/vector-icons";
+import { Card } from "../components";
+import { useBuilding } from "../contexts/BuildingContext";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "EditTenant">;
@@ -24,6 +27,7 @@ const EditTenantScreen: React.FC<Props> = () => {
   const navigation = useNavigation<Props["navigation"]>();
   const route = useRoute<Props["route"]>();
   const { tenant } = route.params;
+  const { selectedBuilding } = useBuilding();
 
   const [name, setName] = useState(tenant.name);
   const [moveInDate, setMoveInDate] = useState(
@@ -58,7 +62,15 @@ const EditTenantScreen: React.FC<Props> = () => {
         description,
       };
 
-      await tenantService.updateTenant(tenant.room.roomName, updatedTenant);
+      if (!selectedBuilding?.id) {
+        Alert.alert("Error", "No building selected");
+        return;
+      }
+      await tenantService.updateTenant(
+        selectedBuilding.id,
+        tenant.room.id,
+        updatedTenant
+      );
       Alert.alert("Success", "Tenant updated successfully");
       navigation.goBack();
     } catch (error) {
@@ -71,62 +83,135 @@ const EditTenantScreen: React.FC<Props> = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.form}>
-        <Text style={styles.label}>Name *</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="Enter tenant name"
-        />
+      <View style={styles.headerSection}>
+        <View style={styles.headerIconCircle}>
+          <Feather name="user-check" size={32} color={theme.colors.card} />
+        </View>
+        <Text style={styles.headerTitle}>Edit Tenant</Text>
+      </View>
+      <Card style={styles.formCard}>
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="user"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter tenant name"
+              placeholderTextColor={theme.colors.text.secondary}
+            />
+          </View>
+        </View>
 
-        <Text style={styles.label}>Phone</Text>
-        <TextInput
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="Enter phone number"
-          keyboardType="phone-pad"
-        />
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="phone"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Phone</Text>
+            <TextInput
+              style={styles.input}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="Enter phone number"
+              placeholderTextColor={theme.colors.text.secondary}
+              keyboardType="phone-pad"
+            />
+          </View>
+        </View>
 
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          placeholder="Enter email address (optional)"
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="mail"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter email address (optional)"
+              placeholderTextColor={theme.colors.text.secondary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
 
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          style={[styles.input, { height: 100, textAlignVertical: "top" }]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Enter tenant description"
-          multiline
-          numberOfLines={4}
-        />
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="file-text"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Enter tenant description"
+              placeholderTextColor={theme.colors.text.secondary}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+        </View>
 
-        <Text style={styles.label}>Move-in Date</Text>
-        <TextInput
-          style={styles.input}
-          value={moveInDate}
-          onChangeText={setMoveInDate}
-          placeholder="YYYY-MM-DD"
-        />
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="calendar"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Move-in Date</Text>
+            <TextInput
+              style={styles.input}
+              value={moveInDate}
+              onChangeText={setMoveInDate}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={theme.colors.text.secondary}
+            />
+          </View>
+        </View>
 
-        <Text style={styles.label}>Move-out Date</Text>
-        <TextInput
-          style={styles.input}
-          value={moveOutDate}
-          onChangeText={setMoveOutDate}
-          placeholder="YYYY-MM-DD (optional)"
-        />
+        <View style={styles.inputGroupRow}>
+          <Feather
+            name="calendar"
+            size={20}
+            color={theme.colors.primary}
+            style={styles.inputIcon}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Move-out Date</Text>
+            <TextInput
+              style={styles.input}
+              value={moveOutDate}
+              onChangeText={setMoveOutDate}
+              placeholder="YYYY-MM-DD (optional)"
+              placeholderTextColor={theme.colors.text.secondary}
+            />
+          </View>
+        </View>
 
         <TouchableOpacity
-          style={[styles.submitButton, loading && styles.disabledButton]}
+          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           disabled={loading}
         >
@@ -134,7 +219,7 @@ const EditTenantScreen: React.FC<Props> = () => {
             {loading ? "Updating..." : "Update Tenant"}
           </Text>
         </TouchableOpacity>
-      </View>
+      </Card>
     </ScrollView>
   );
 };
@@ -144,8 +229,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  form: {
+  headerSection: {
+    alignItems: "center",
+    marginTop: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+  },
+  headerIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: theme.spacing.sm,
+  },
+  headerTitle: {
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: "700",
+    color: theme.colors.primary,
+  },
+  formCard: {
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.xl,
     padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  inputGroupRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: theme.spacing.md,
+  },
+  inputIcon: {
+    marginTop: theme.spacing.sm,
+    marginRight: theme.spacing.md,
   },
   label: {
     fontSize: theme.typography.sizes.sm,
@@ -156,9 +278,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.card,
     borderRadius: theme.borderRadius.sm,
     padding: theme.spacing.sm,
-    marginBottom: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.text.primary,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: "top",
   },
   submitButton: {
     backgroundColor: theme.colors.primary,
@@ -166,7 +293,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     alignItems: "center",
   },
-  disabledButton: {
+  submitButtonDisabled: {
     opacity: 0.7,
   },
   submitButtonText: {

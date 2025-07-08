@@ -27,7 +27,8 @@ const tenantService = {
       if (response?.data) {
         // Map backend response to UI model
         return response.data.map((tenant: any) => ({
-          id: tenant.tenantCode, // using tenantCode as id
+          id: tenant.id, // use the real tenant UUID from backend
+          tenantCode: tenant.tenantCode, // keep tenantCode for display if needed
           name: tenant.name,
           phone: tenant.phone,
           email: tenant.email,
@@ -36,6 +37,7 @@ const tenantService = {
           status: tenant.status,
           description: tenant.description,
           room: {
+            id: tenant.roomId, // use the real room UUID from backend
             roomName: tenant.roomName,
             rentAmount: tenant.rentAmount,
             description: "", // Not provided by backend, set default
@@ -136,21 +138,18 @@ const tenantService = {
   deleteTenant: async (
     buildingId: string,
     roomId: string,
-    phone: string
+    tenantId: string
   ): Promise<void> => {
     try {
       await api.delete(
-        `/buildings/${buildingId}/rooms/${roomId}/tenant/${phone}`
+        `/buildings/${buildingId}/rooms/${roomId}/tenant/${tenantId}`
       );
-      // If we get here, the deletion was successful
       return;
     } catch (error: any) {
-      // Check if this is a JSON parse error with empty response
       if (
         error.message?.includes("JSON Parse error") &&
         error.message?.includes("Unexpected end of input")
       ) {
-        // This is actually a success case - the server returned empty response
         return;
       }
       console.error("Error in deleteTenant:", error);
@@ -161,22 +160,15 @@ const tenantService = {
   // Deactivate a tenant
   deactivateTenant: async (
     buildingId: string,
-    roomId: string,
-    phone: string
+    roomId: string
   ): Promise<void> => {
     try {
-      const response = await api.put(
-        `/buildings/${buildingId}/rooms/${roomId}/tenant/${phone}/deactivate`,
-        {
-          status: TenantStatus.INACTIVE,
-        }
+      await api.put(
+        `/buildings/${buildingId}/rooms/${roomId}/tenant/deactivate`,
+        { status: TenantStatus.INACTIVE }
       );
-
-      // The backend returns 200 OK with no body on success
-      // If we get here, the deactivation was successful
       return;
     } catch (error: any) {
-      // If the error has a response with a message, use that
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       }
@@ -186,24 +178,14 @@ const tenantService = {
   },
 
   // Activate a tenant
-  activateTenant: async (
-    buildingId: string,
-    roomId: string,
-    phone: string
-  ): Promise<void> => {
+  activateTenant: async (buildingId: string, roomId: string): Promise<void> => {
     try {
-      const response = await api.put(
-        `/buildings/${buildingId}/rooms/${roomId}/tenant/${phone}/activate`,
-        {
-          status: TenantStatus.ACTIVE,
-        }
+      await api.put(
+        `/buildings/${buildingId}/rooms/${roomId}/tenant/activate`,
+        { status: TenantStatus.ACTIVE }
       );
-
-      // The backend returns 200 OK with no body on success
-      // If we get here, the activation was successful
       return;
     } catch (error: any) {
-      // If the error has a response with a message, use that
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       }
@@ -226,7 +208,7 @@ const tenantService = {
 
   getTenantDue: async (tenantCode: string): Promise<DueAmountDetails> => {
     const response = await api.get(`/tenant/${tenantCode}/due`);
-    return response.data;
+    return response.data.data;
   },
 };
 
