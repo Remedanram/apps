@@ -39,6 +39,7 @@ export interface Transaction {
   senderPhone: string;
   description: string;
   importedAt: string;
+  method: string;
 }
 
 export interface DashboardData {

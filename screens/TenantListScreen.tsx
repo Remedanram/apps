@@ -223,7 +223,7 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
       <FlatList
         data={filteredTenants}
         keyExtractor={(item) =>
-          `${item.room?.roomName || "no-room"}-${item.phone}`
+          `${item.tenantCode || "no-code"}-${item.id || item.phone}`
         }
         renderItem={({ item }) => (
           <Card style={styles.tenantCard}>
@@ -246,7 +246,11 @@ const TenantListScreen: React.FC<Props> = ({ navigation }) => {
             </View>
             <View style={styles.cardContent}>
               <Text style={styles.tenantName}>{item.name}</Text>
-              <Text style={styles.tenantCode}>Tenant Code: {item.id}</Text>
+              {item.tenantCode && (
+                <Text style={styles.tenantCode}>
+                  Tenant Code: {item.tenantCode}
+                </Text>
+              )}
               <Text style={styles.tenantDetailsAccent}>
                 Room: {item.room?.roomName}
               </Text>
@@ -380,7 +384,7 @@ const styles = StyleSheet.create({
   },
   tenantCode: {
     fontSize: theme.typography.sizes.sm,
-    color: theme.colors.text.secondary,
+    color: theme.colors.primary,
     marginBottom: theme.spacing.xs,
     fontWeight: "500",
   },
@@ -421,6 +425,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginLeft: theme.spacing.md,
+  },
+  tenantCodeBadge: {
+    backgroundColor: theme.colors.info,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 2,
+    alignSelf: "flex-start",
+    marginBottom: theme.spacing.xs,
+    marginTop: theme.spacing.xs,
+  },
+  tenantCodeText: {
+    color: theme.colors.card,
+    fontWeight: "bold",
+    fontSize: theme.typography.sizes.sm,
   },
 });
 

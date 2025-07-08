@@ -285,30 +285,57 @@ const DashboardScreen: React.FC = () => {
               />
             </TouchableOpacity>
           </View>
+          {dashboardData.recentTransactions?.length === 0 && (
+            <View style={styles.emptyTransactionsContainer}>
+              <Feather
+                name="credit-card"
+                size={40}
+                color={theme.colors.text.secondary}
+              />
+              <Text style={styles.emptyTransactionsText}>
+                No recent transactions
+              </Text>
+            </View>
+          )}
           {dashboardData.recentTransactions?.map((transaction) => (
-            <View key={transaction.id} style={styles.transactionItem}>
-              <View>
-                <Text style={styles.transactionName}>
-                  {transaction.senderName}
+            <View key={transaction.id} style={styles.transactionItemBeautiful}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.transactionNameBeautiful}>
+                  Name: {transaction.senderName}
                 </Text>
-                <Text style={styles.transactionPhone}>
-                  {transaction.senderPhone}
+                <Text style={styles.transactionPhoneBeautiful}>
+                  Phone: {transaction.senderPhone}
                 </Text>
-                <Text style={styles.transactionDescription}>
+                <Text style={styles.transactionDescriptionBeautiful}>
                   {transaction.description}
                 </Text>
+                <View style={styles.methodBadge}>
+                  <Text style={styles.methodBadgeText}>
+                    {transaction.method.replace(/_/g, " ")}
+                  </Text>
+                </View>
               </View>
-              <View>
+              <View style={{ alignItems: "flex-end", minWidth: 90 }}>
                 <Text
                   style={[
-                    styles.transactionAmount,
-                    { color: theme.colors.success },
+                    styles.transactionAmountBeautiful,
+                    {
+                      color:
+                        transaction.amount >= 0
+                          ? theme.colors.success
+                          : theme.colors.error,
+                    },
                   ]}
                 >
-                  +${transaction.amount.toFixed(2)}
+                  {transaction.amount >= 0 ? "+" : "-"}$
+                  {Math.abs(transaction.amount).toFixed(2)}
                 </Text>
-                <Text style={styles.transactionDate}>
-                  {new Date(transaction.txnDate).toLocaleDateString()}
+                <Text style={styles.transactionDateBeautiful}>
+                  {new Date(transaction.txnDate).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </Text>
               </View>
             </View>
@@ -500,6 +527,141 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.xs,
     textAlign: "right",
+  },
+  transactionItemBeautiful: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  transactionNameBeautiful: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: "700",
+    color: theme.colors.primary,
+    marginBottom: 2,
+  },
+  transactionPhoneBeautiful: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    marginBottom: 2,
+  },
+  transactionDescriptionBeautiful: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    fontStyle: "italic",
+    marginBottom: 4,
+  },
+  methodBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: theme.colors.info,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  methodBadgeText: {
+    color: theme.colors.card,
+    fontWeight: "bold",
+    fontSize: theme.typography.sizes.xs,
+    letterSpacing: 0.5,
+  },
+  transactionAmountBeautiful: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  transactionDateBeautiful: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    marginTop: 2,
+  },
+  emptyTransactionsContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: theme.spacing.lg,
+  },
+  emptyTransactionsText: {
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.md,
+    marginTop: theme.spacing.sm,
+  },
+  transactionItemPro: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  transactionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 2,
+    minWidth: 0,
+  },
+  transactionNamePro: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: "700",
+    color: theme.colors.primary,
+    flexShrink: 1,
+    marginRight: theme.spacing.xs,
+    minWidth: 0,
+  },
+  methodBadgePro: {
+    backgroundColor: theme.colors.info,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 2,
+    minWidth: 0,
+  },
+  methodBadgeTextPro: {
+    color: theme.colors.card,
+    fontWeight: "bold",
+    fontSize: theme.typography.sizes.xs,
+    letterSpacing: 0.5,
+  },
+  transactionPhonePro: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    marginBottom: 2,
+  },
+  transactionDescriptionPro: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    fontStyle: "italic",
+    marginBottom: 2,
+  },
+  transactionRightCol: {
+    alignItems: "flex-end",
+    marginLeft: theme.spacing.md,
+    minWidth: 80,
+  },
+  transactionAmountPro: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  transactionDatePro: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    marginTop: 2,
   },
 });
 

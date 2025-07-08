@@ -7,6 +7,7 @@ export enum TenantStatus {
 
 export interface Tenant {
   id: number;
+  tenantCode?: string;
   name: string;
   phone: string;
   email: string;
