@@ -46,6 +46,13 @@ const StatusScreen = () => {
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [showYearPicker, setShowYearPicker] = useState(false);
 
+  // Define creationYear and creationMonth at the top level for use throughout the component
+  const createdDate = selectedBuilding?.createdAt
+    ? new Date(selectedBuilding.createdAt)
+    : null;
+  const creationYear = createdDate ? createdDate.getFullYear() : null;
+  const creationMonth = createdDate ? createdDate.getMonth() : null; // 0-based
+
   useEffect(() => {
     if (selectedBuilding?.id) {
       fetchAvailableYears();
@@ -189,6 +196,30 @@ const StatusScreen = () => {
     </View>
   );
 
+  // Month abbreviations for the report
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  // Filter months based on building creation date
+  let filteredMonths = months;
+  if (creationYear && creationMonth !== null) {
+    if (selectedYear === creationYear) {
+      filteredMonths = months.slice(creationMonth);
+    }
+  }
+
   const renderScrollableContent = () => (
     <ScrollView
       horizontal
@@ -197,20 +228,7 @@ const StatusScreen = () => {
     >
       <View>
         <View style={styles.tableHeader}>
-          {[
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-          ].map((month) => (
+          {filteredMonths.map((month) => (
             <View key={month} style={styles.headerCell}>
               <Text style={styles.headerText}>{month}</Text>
             </View>
@@ -218,31 +236,26 @@ const StatusScreen = () => {
         </View>
         {paymentStatusData.map((room) => (
           <View key={room.roomName} style={styles.tableRow}>
-            {[
-              "JAN",
-              "FEB",
-              "MAR",
-              "APR",
-              "MAY",
-              "JUN",
-              "JUL",
-              "AUG",
-              "SEP",
-              "OCT",
-              "NOV",
-              "DEC",
-            ].map((monthAbbr) => {
-              const monthData = room.months.find(
-                (m) => m.monthAbbrev === monthAbbr
-              );
-              const status = monthData ? monthData.status : "PENDING";
+            {room.months
+              .filter((m, idx) => {
+                if (
+                  creationYear &&
+                  creationMonth !== null &&
+                  selectedYear === creationYear
+                ) {
+                  return idx >= creationMonth;
+                }
+                return true;
+              })
+              .map((month) => {
+                const status = month.status;
 
-              return (
-                <View key={monthAbbr} style={styles.cell}>
-                  {renderStatusCell(status)}
-                </View>
-              );
-            })}
+                return (
+                  <View key={month.monthAbbrev} style={styles.cell}>
+                    {renderStatusCell(status)}
+                  </View>
+                );
+              })}
           </View>
         ))}
       </View>
