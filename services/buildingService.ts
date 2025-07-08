@@ -44,6 +44,11 @@ const buildingService = {
       throw error;
     }
   },
+
+  getAvailableYears: async (buildingId: string): Promise<number[]> => {
+    const response = await api.get(`/buildings/${buildingId}/years`);
+    return response.data;
+  },
 };
 
 export default buildingService;

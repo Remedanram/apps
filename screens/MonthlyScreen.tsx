@@ -22,6 +22,7 @@ import { RootStackParamList } from "../navigation/AppNavigator";
 import matchService, { MatchRoom } from "../services/matchService";
 import { useBuilding } from "../contexts/BuildingContext";
 import tenantService, { DueAmountDetails } from "../services/tenantService";
+import buildingService from "../services/buildingService";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "Monthly">;
@@ -57,7 +58,9 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
   const loadYears = async () => {
     if (!selectedBuilding?.id) return;
     try {
-      const years = await matchService.getAvailableYears(selectedBuilding.id);
+      const years = await buildingService.getAvailableYears(
+        selectedBuilding.id
+      );
       setAvailableYears(Array.isArray(years) ? years : []);
     } catch (error) {
       console.error("Error loading years:", error);

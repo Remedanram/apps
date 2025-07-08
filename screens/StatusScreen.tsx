@@ -20,6 +20,7 @@ import api from "../services/api";
 import type { RoomStats } from "../types/room";
 import matchService from "../services/matchService";
 import { useBuilding } from "../contexts/BuildingContext";
+import buildingService from "../services/buildingService";
 
 // Define the type for the payment status data based on the API response
 interface MonthStatus {
@@ -68,7 +69,9 @@ const StatusScreen = () => {
   const fetchAvailableYears = async () => {
     if (!selectedBuilding?.id) return;
     try {
-      const years = await matchService.getAvailableYears(selectedBuilding.id);
+      const years = await buildingService.getAvailableYears(
+        selectedBuilding.id
+      );
       setAvailableYears(Array.isArray(years) ? years : []);
       if (Array.isArray(years) && years.length > 0) {
         setSelectedYear(years[years.length - 1]);
