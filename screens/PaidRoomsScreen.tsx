@@ -52,6 +52,13 @@ const PaidRoomsScreen: React.FC<Props> = ({ route }) => {
         <View>
           <Text style={styles.roomNumber}>{item.roomName}</Text>
           <Text style={styles.tenantName}>{item.tenantName}</Text>
+          {item.paymentMethod && (
+            <View style={styles.paymentMethodBadge}>
+              <Text style={styles.paymentMethodText}>
+                {item.paymentMethod.replace(/_/g, " ")}
+              </Text>
+            </View>
+          )}
         </View>
         <View style={styles.amountContainer}>
           <Text style={styles.amount}>${item.amount}</Text>
@@ -174,6 +181,20 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.md,
     padding: theme.spacing.md,
     fontStyle: "italic",
+  },
+  paymentMethodBadge: {
+    backgroundColor: theme.colors.info,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 2,
+    alignSelf: "flex-start",
+    marginTop: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
+  },
+  paymentMethodText: {
+    color: theme.colors.card,
+    fontWeight: "bold",
+    fontSize: theme.typography.sizes.sm,
   },
 });
 

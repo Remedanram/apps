@@ -321,9 +321,13 @@ const MonthlyScreen: React.FC<Props> = ({ navigation }) => {
                     <Text style={styles.transactionTenant}>
                       {room.tenantName}
                     </Text>
-                    <Text style={styles.statusText}>
-                      Status: {room.status.replace(/_/g, " ")}
-                    </Text>
+                    {room.paymentMethod && (
+                      <View style={styles.paymentMethodBadge}>
+                        <Text style={styles.paymentMethodText}>
+                          {room.paymentMethod.replace(/_/g, " ")}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                   <View>
                     <Text
@@ -699,6 +703,20 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.lg,
     fontWeight: "600",
     marginBottom: theme.spacing.md,
+  },
+  paymentMethodBadge: {
+    backgroundColor: theme.colors.info,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 2,
+    alignSelf: "flex-start",
+    marginTop: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
+  },
+  paymentMethodText: {
+    color: theme.colors.card,
+    fontWeight: "bold",
+    fontSize: theme.typography.sizes.sm,
   },
 });
 

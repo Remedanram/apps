@@ -12,6 +12,7 @@ export interface MatchRoom {
     | "MATCHED_OVERPAID"
     | "PENDING_UNDERPAID"
     | "PENDING";
+  paymentMethod?: string;
 }
 
 const matchService = {
